@@ -3,47 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <title>Cerebrus OS — Interface</title>
+
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: #f3f3f3;
+            background: #eef1f5;
+            margin: 0;
+        }
+
+        header {
+            background: #1f2937;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 26px;
+            letter-spacing: 1px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #374151;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            color: white;
+            cursor: pointer;
+            border-right: 1px solid #4b5563;
+        }
+
+        .tab:hover {
+            background: #4b5563;
+        }
+
+        .tab.active {
+            background: #111827;
+        }
+
+        .content {
             padding: 20px;
         }
-        h1 { color: #333; }
+
         button {
             padding: 10px 20px;
             margin: 10px 0;
-            background: #4CAF50;
+            background: #2563eb;
             color: white;
             border: none;
             cursor: pointer;
+            border-radius: 4px;
         }
-        button:hover { background: #45a049; }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
         #output {
             margin-top: 20px;
             padding: 15px;
             background: white;
             border: 1px solid #ccc;
             white-space: pre-wrap;
+            border-radius: 4px;
         }
     </style>
 </head>
+
 <body>
 
-<h1>Cerebrus OS — Interface</h1>
+<header>Cerebrus OS — Control Panel</header>
 
-<button onclick="callAPI('/request_house')">Request House</button>
-<button onclick="callAPI('/request_transport')">Request Transport</button>
-<button onclick="callAPI('/send_residue')">Send Residue</button>
-<button onclick="callAPI('/process_incident')">Process Incident</button>
-<button onclick="callAPI('/civic_intervention')">Civic Force Intervention</button>
-<button onclick="callAPI('/update_ecology')">Update Ecology</button>
-<button onclick="callAPI('/vote')">Vote</button>
-<button onclick="callAPI('/logs')">View Public Logs</button>
+<div class="tabs">
+    <div class="tab active" onclick="openTab('housing')">Housing</div>
+    <div class="tab" onclick="openTab('mobility')">Mobility</div>
+    <div class="tab" onclick="openTab('logistics')">Logistics</div>
+    <div class="tab" onclick="openTab('justice')">Justice</div>
+    <div class="tab" onclick="openTab('ecology')">Ecology</div>
+    <div class="tab" onclick="openTab('voting')">Voting</div>
+    <div class="tab" onclick="openTab('logs')">Logs</div>
+</div>
 
-<div id="output">Results will appear here...</div>
+<div class="content">
+
+    <!-- HOUSING -->
+    <div id="housing" class="tab-content">
+        <h2>Housing Module</h2>
+        <button onclick="callAPI('/request_house')">Request House</button>
+    </div>
+
+    <!-- MOBILITY -->
+    <div id="mobility" class="tab-content" style="display:none;">
+        <h2>Mobility Module</h2>
+        <button onclick="callAPI('/request_transport')">Request Transport</button>
+    </div>
+
+    <!-- LOGISTICS -->
+    <div id="logistics" class="tab-content" style="display:none;">
+        <h2>Logistics Module</h2>
+        <button onclick="callAPI('/send_residue')">Send Residue</button>
+    </div>
+
+    <!-- JUSTICE -->
+    <div id="justice" class="tab-content" style="display:none;">
+        <h2>Justice Module</h2>
+        <button onclick="callAPI('/process_incident')">Process Incident</button>
+        <button onclick="callAPI('/civic_intervention')">Civic Force Intervention</button>
+    </div>
+
+    <!-- ECOLOGY -->
+    <div id="ecology" class="tab-content" style="display:none;">
+        <h2>Ecology Module</h2>
+        <button onclick="callAPI('/update_ecology')">Update Ecology Panel</button>
+    </div>
+
+    <!-- VOTING -->
+    <div id="voting" class="tab-content" style="display:none;">
+        <h2>Voting Module</h2>
+        <button onclick="callAPI('/vote')">Run Vote</button>
+    </div>
+
+    <!-- LOGS -->
+    <div id="logs" class="tab-content" style="display:none;">
+        <h2>Public Logs</h2>
+        <button onclick="callAPI('/logs')">Load Logs</button>
+    </div>
+
+    <div id="output">Results will appear here...</div>
+</div>
 
 <script>
+    function openTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(div => div.style.display = 'none');
+        document.getElementById(tabName).style.display = 'block';
+
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+
     function callAPI(endpoint) {
         fetch(endpoint)
             .then(response => response.json())
