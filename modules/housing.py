@@ -1,15 +1,17 @@
 # modules/housing.py
 
 from dataclasses import dataclass
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Literal
 
-from core.types import Family, House
+from core.types import Family, House, HouseType
 
 
 @dataclass
 class HouseRequest:
     family_id: str
     house_id: str
+    # "FIXA" ou "SUPLENTE"
+    requested_type: HouseType
 
 
 @dataclass
@@ -37,16 +39,27 @@ def has_high_social_relevance(family: Family) -> bool:
     return any(tag in tags_prioritarias for tag in family.social_relevance_tags)
 
 
+def family_has_fixed_house(family_id: str, houses: List[House]) -> bool:
+    for h in houses:
+        if h.type == "FIXA" and h.current_family_id == family_id:
+            return True
+    return False
+
+
 def allocate_house(
     house: House,
     families_by_id: Dict[str, Family],
     requests: List[HouseRequest],
 ) -> AllocationResult:
-    interested_families: List[Family] = [
-        families_by_id[r.family_id]
-        for r in requests
-        if r.house_id == house.id and r.family_id in families_by_id
-    ]
+    # filtrar pedidos para esta casa e tipo correto
+    interested_families: List[Family] = []
+    for r in requests:
+        if r.house_id != house.id:
+            continue
+        fam = families_by_id.get(r.family_id)
+        if fam is None:
+            continue
+        interested_families.append(fam)
 
     if not interested_families:
         return AllocationResult(
@@ -94,7 +107,6 @@ def allocate_house(
             reason="Desempate por idosos presentes",
         )
     if len(with_elderly) > 1:
-        # podemos refinar depois (idade média, nº de idosos, etc.)
         return AllocationResult(
             house_id=house.id,
             allocated_family_id=with_elderly[0].id,
@@ -122,3 +134,38 @@ def allocate_house(
         competing_families=[f.id for f in interested_families],
         reason="Empate total — sorteio auditável",
     )
+
+
+def assign_house(
+    house: House,
+    family: Family,
+    all_houses: List[House],
+) -> bool:
+    """
+    Tenta atribuir uma casa a uma família, respeitando:
+    - apenas 1 casa FIXA por família
+    - SUPLENTE é sempre uso, nunca posse
+    """
+    if house.type == "FIXA":
+        if family_has_fixed_house(family.id, all_houses):
+            return False
+        house.current_family_id = family.id
+        return True
+
+    if house.type == "SUPLENTE":
+        house.current_family_id = family.id
+        return True
+
+    return False
+
+
+def release_supplement_house(house: House, family_id: str) -> bool:
+    """
+    Liberta uma casa suplente quando a família sai.
+    """
+    if house.type != "SUPLENTE":
+        return False
+    if house.current_family_id != family_id:
+        return False
+    house.current_family_id = None
+    return True
