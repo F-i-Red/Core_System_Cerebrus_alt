@@ -175,8 +175,18 @@ def enroll_in_curriculum(
     specializations: Dict[str, Specialization]
 ) -> bool:
     """
-    Ver
+    Verifica se a pessoa tem as bases necessárias para entrar no currículo.
+    Retorna True se puder entrar, False caso contrário.
     """
+    spec = specializations.get(person_id)
+    if not spec:
+        return False
+
+    # precisa de pelo menos uma tag base
+    if not any(tag in spec.tags for tag in curriculum.required_tags):
+        return False
+
+    return True
 
 # ligação com Justiça
 
