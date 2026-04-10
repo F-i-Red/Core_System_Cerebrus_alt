@@ -176,3 +176,32 @@ def enroll_in_curriculum(
 ) -> bool:
     """
     Ver
+
+# ligação com Justiça
+
+def assign_rehabilitation_training(
+    aggressor_id,
+    curriculum_paths,
+    training_projects
+):
+    """
+    Atribui automaticamente um projeto de formação
+    como parte da reparação/restauração.
+    """
+
+    # escolher currículo que tenha componente restaurativa
+    for path in curriculum_paths.values():
+        if "restaurativa" in path.required_tags:
+            # criar projeto
+            project = TrainingProject(
+                id=f"rehab_{aggressor_id}",
+                title="Formação Restaurativa Obrigatória",
+                description="Processo de reintegração e autocontrolo.",
+                institution_id="centro_formacao_geral",
+                curriculum_path_id=path.id
+            )
+            project.participants.append(aggressor_id)
+            training_projects[project.id] = project
+            return project
+
+    return None
