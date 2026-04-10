@@ -415,14 +415,44 @@
                     </div>
                 </div>
 
-                <!-- HOUSING TAB -->
-                <div class="main-tab" id="tab-housing" style="display:none;">
-                    <p>Housing allocation and family placement.</p>
-                    <button class="action" onclick="callAPI('/request_house')">Request House</button>
-                    <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">
-                        This demo assigns a predefined house to a predefined family and logs the decision in the public ledger.
-                    </p>
-                </div>
+<!-- HOUSING TAB -->
+<div class="main-tab" id="tab-housing" style="display:none;">
+    <div class="tab-buttons">
+        <button class="tab-btn active" onclick="setHousingTab('housing-dashboard', event)">Dashboard</button>
+        <button class="tab-btn" onclick="setHousingTab('housing-actions', event)">Actions</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="housing-dashboard" class="tab-section active">
+        <p>Housing allocation metrics and system overview.</p>
+
+        <button class="action" onclick="refreshHousingDashboard()">Refresh Housing Dashboard</button>
+
+        <div style="margin-top:10px;">
+            <canvas id="housingBarChart" height="120"></canvas>
+        </div>
+
+        <div style="margin-top:20px; display:flex; gap:20px;">
+            <div style="flex:1;">
+                <canvas id="housingDoughnutChart" height="140"></canvas>
+            </div>
+            <div style="flex:1; font-size:12px;">
+                <h4 style="margin-bottom:6px; color:var(--accent);">Recent Housing Actions</h4>
+                <div id="housingActionsLog" style="white-space:pre-wrap; color:var(--text-muted);"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div id="housing-actions" class="tab-section">
+        <p>Manual housing actions.</p>
+        <button class="action" onclick="callAPI('/request_house')">Request House</button>
+        <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">
+            This demo assigns a predefined house to a predefined family and logs the decision in the public ledger.
+        </p>
+    </div>
+</div>
+
 
                 <!-- MOBILITY TAB -->
                 <div class="main-tab" id="tab-mobility" style="display:none;">
