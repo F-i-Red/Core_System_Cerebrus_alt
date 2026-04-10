@@ -1,159 +1,197 @@
-# modules/ecology.py
+"""
+Ecology Module
+--------------
+
+This module tracks ecological resource flows within a neighborhood block.
+It monitors consumption, regeneration, and overall ecological balance,
+producing alerts when negative trends appear.
+
+The module integrates with:
+- Civic Force (for ecological inspections)
+- Public dashboards (for transparency)
+- Future sustainability modules
+
+This is a simplified but functional ecological engine.
+"""
 
 from dataclasses import dataclass
-from typing import Dict, Optional, Literal
-import time
-import random
-
-ResourceType = Literal["agua", "energia", "residuos", "co2"]
-
-AlertLevel = Literal["normal", "atencao", "alerta", "critico"]
+from typing import Dict, Any, Optional
 
 
-# --------------------------
-# Estruturas base
-# --------------------------
+# ---------------------------------------------------------
+# Data Models
+# ---------------------------------------------------------
 
 @dataclass
 class ResourceFlow:
-    type: ResourceType
+    """Represents the consumption and regeneration of a resource."""
     consumed: float = 0.0
     regenerated: float = 0.0
-    balance: float = 0.0
-    last_update: float = 0.0
 
-
-@dataclass
-class EcoBlock:
-    id: str
-    name: str
-    flows: Dict[ResourceType, ResourceFlow]
-    health_score: float = 1.0  # 1.0 = perfeito, 0.0 = colapso
+    def balance(self) -> float:
+        """Returns the net ecological balance."""
+        return self.regenerated - self.consumed
 
 
 @dataclass
 class EcoAlert:
-    block_id: str
-    resource: ResourceType
-    level: AlertLevel
+    """Represents an ecological alert triggered by negative balance."""
+    resource: str
+    level: str  # "attention", "warning", "critical"
     message: str
-    timestamp: float
+    balance: float
 
 
-# --------------------------
-# Atualização de fluxos
-# --------------------------
+# ---------------------------------------------------------
+# Ecology Module
+# ---------------------------------------------------------
 
-def update_flow(block: EcoBlock, resource: ResourceType, consumed: float, regenerated: float):
-    flow = block.flows[resource]
-    flow.consumed += consumed
-    flow.regenerated += regenerated
-    flow.balance = flow.regenerated - flow.consumed
-    flow.last_update = time.time()
-
-    # atualizar saúde ecológica
-    block.health_score = compute_health(block)
-
-
-# --------------------------
-# Saúde ecológica
-# --------------------------
-
-def compute_health(block: EcoBlock) -> float:
+class EcologyModule:
     """
-    Saúde ecológica baseada em:
-    - balanço de água
-    - balanço de energia
-    - resíduos regenerados
-    - emissões de CO2
+    Core ecology module.
+
+    Tracks:
+    - Water
+    - Energy
+    - Waste
+    - CO2
+
+    Provides:
+    - Flow updates
+    - Health score
+    - Alert generation
+    - Dashboard-ready data
     """
 
-    agua = block.flows["agua"].balance
-    energia = block.flows["energia"].balance
-    residuos = block.flows["residuos"].balance
-    co2 = block.flows["co2"].balance
+    def __init__(self):
+        # Initial resource flows for Block A
+        self.resources: Dict[str, ResourceFlow] = {
+            "water": ResourceFlow(),
+            "energy": ResourceFlow(),
+            "waste": ResourceFlow(),
+            "co2": ResourceFlow()
+        }
 
-    score = 1.0
+    # -----------------------------------------------------
+    # Flow Updates
+    # -----------------------------------------------------
 
-    # água
-    if agua < 0:
-        score -= 0.2
+    def update_flow(self, resource: str, consumed: float, regenerated: float) -> None:
+        """
+        Updates the flow of a specific resource.
+        """
 
-    # energia
-    if energia < 0:
-        score -= 0.2
+        if resource not in self.resources:
+            raise ValueError(f"Unknown resource: {resource}")
 
-    # resíduos
-    if residuos < 0:
-        score -= 0.2
+        self.resources[resource].consumed += consumed
+        self.resources[resource].regenerated += regenerated
 
-    # CO2
-    if co2 > 0:
-        score -= 0.2
+    # -----------------------------------------------------
+    # Health Score
+    # -----------------------------------------------------
 
-    return max(0.0, min(1.0, score))
+    def compute_health(self) -> float:
+        """
+        Computes an overall ecological health score between 0 and 1.
 
+        Formula:
+        - Each resource contributes equally.
+        - Positive balance increases score.
+        - Negative balance decreases score.
+        """
 
-# --------------------------
-# Alertas ecológicos
-# --------------------------
+        total = 0
+        count = len(self.resources)
 
-def evaluate_alert(block: EcoBlock, resource: ResourceType) -> Optional[EcoAlert]:
-    flow = block.flows[resource]
+        for flow in self.resources.values():
+            bal = flow.balance()
 
-    if flow.balance >= 0:
-        return None
+            if bal >= 0:
+                total += 1.0
+            else:
+                total += max(0.0, 1.0 + bal / 100.0)
 
-    deficit = abs(flow.balance)
+        return total / count
 
-    if deficit < 10:
-        level = "atencao"
-    elif deficit < 30:
-        level = "alerta"
-    else:
-        level = "critico"
+    # -----------------------------------------------------
+    # Alert Evaluation
+    # -----------------------------------------------------
 
-    return EcoAlert(
-        block_id=block.id,
-        resource=resource,
-        level=level,
-        message=f"Défice de {resource}: {deficit:.1f} unidades",
-        timestamp=time.time()
-    )
+    def evaluate_alert(self, resource: str) -> Optional[EcoAlert]:
+        """
+        Evaluates whether a resource requires an ecological alert.
 
+        Thresholds:
+        - balance < 0 → attention
+        - balance < -20 → warning
+        - balance < -50 → critical
+        """
 
-# --------------------------
-# Integração com Força Cívica
-# --------------------------
+        flow = self.resources[resource]
+        bal = flow.balance()
 
-def create_civic_task_from_alert(alert: EcoAlert):
-    """
-    Converte alerta ecológico em tarefa da Força Cívica.
-    """
-    from modules.civic_force import CivicTask
+        if bal >= 0:
+            return None
 
-    task = CivicTask(
-        id=f"eco_{alert.block_id}_{alert.resource}",
-        type="inspecao",
-        location=alert.block_id,
-        priority=2 if alert.level == "alerta" else 3,
-        required_skills=["ecologia", "manutencao"]
-    )
-    return task
+        if bal < -50:
+            return EcoAlert(
+                resource=resource,
+                level="critical",
+                message=f"Critical deficit detected in {resource}.",
+                balance=bal
+            )
 
+        if bal < -20:
+            return EcoAlert(
+                resource=resource,
+                level="warning",
+                message=f"Warning: significant deficit in {resource}.",
+                balance=bal
+            )
 
-# --------------------------
-# Integração com Painéis Públicos
-# --------------------------
+        return EcoAlert(
+            resource=resource,
+            level="attention",
+            message=f"Attention: negative balance in {resource}.",
+            balance=bal
+        )
 
-def ecology_to_panel(block: EcoBlock):
-    """
-    Dados ecológicos para o painel do bairro.
-    """
-    return {
-        "agua_balance": block.flows["agua"].balance,
-        "energia_balance": block.flows["energia"].balance,
-        "residuos_balance": block.flows["residuos"].balance,
-        "co2_balance": block.flows["co2"].balance,
-        "eco_health": block.health_score
-    }
+    # -----------------------------------------------------
+    # Civic Force Integration
+    # -----------------------------------------------------
+
+    def create_civic_task_from_alert(self, alert: EcoAlert) -> Dict[str, Any]:
+        """
+        Converts an ecological alert into a civic inspection task.
+        """
+
+        return {
+            "task_type": "ecology_inspection",
+            "priority": 2 if alert.level == "attention" else 3,
+            "required_skills": ["ecology", "inspection"],
+            "location": "Block A",
+            "alert": {
+                "resource": alert.resource,
+                "level": alert.level,
+                "balance": alert.balance
+            }
+        }
+
+    # -----------------------------------------------------
+    # Dashboard Output
+    # -----------------------------------------------------
+
+    def ecology_to_panel(self) -> Dict[str, Dict[str, float]]:
+        """
+        Returns a dashboard-ready dictionary of resource flows.
+        """
+
+        return {
+            resource: {
+                "consumed": flow.consumed,
+                "regenerated": flow.regenerated,
+                "balance": flow.balance()
+            }
+            for resource, flow in self.resources.items()
+        }
