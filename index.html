@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Cerebrus OS — Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f3f3;
+            padding: 20px;
+        }
+        h1 { color: #333; }
+        button {
+            padding: 10px 20px;
+            margin: 10px 0;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover { background: #45a049; }
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border: 1px solid #ccc;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Cerebrus OS — Interface</h1>
+
+<button onclick="callAPI('/request_house')">Pedir Casa</button>
+<button onclick="callAPI('/request_transport')">Pedir Transporte</button>
+<button onclick="callAPI('/send_residue')">Enviar Resíduo</button>
+<button onclick="callAPI('/process_incident')">Processar Incidente</button>
+<button onclick="callAPI('/civic_intervention')">Força Cívica</button>
+<button onclick="callAPI('/update_ecology')">Atualizar Ecologia</button>
+<button onclick="callAPI('/vote')">Votar</button>
+<button onclick="callAPI('/logs')">Ver Logs Públicos</button>
+
+<div id="output">Resultados aparecerão aqui...</div>
+
+<script>
+    function callAPI(endpoint) {
+        fetch(endpoint)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("output").textContent =
+                    JSON.stringify(data, null, 2);
+            });
+    }
+</script>
+
+</body>
+</html>
