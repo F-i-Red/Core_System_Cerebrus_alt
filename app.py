@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from core.engine import CerebrusEngine
 from main import setup_engine  # reutilizamos o setup do main
 
@@ -8,6 +8,10 @@ engine = setup_engine()
 # --------------------------
 # Endpoints
 # --------------------------
+
+@app.get("/")
+def serve_index():
+    return send_from_directory("static", "index.html")
 
 @app.get("/request_house")
 def request_house():
