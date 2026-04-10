@@ -223,3 +223,39 @@ def process_incident(
 
     incident.resolved = True
     return actions
+
+# ligação com Mobilidade e Habitação
+
+def protect_victim_full_pipeline(
+    victim_id,
+    fleet,
+    houses,
+    assign_house_fn,
+    request_vehicle_fn
+):
+    """
+    Pipeline completo:
+    - pedir veículo seguro
+    - transportar vítima
+    - atribuir casa suplente segura
+    """
+
+    # 1) pedir veículo
+    req = {
+        "person_id": victim_id,
+        "origin": "local_incidente",
+        "destination": "zona_segura",
+        "priority": 3
+    }
+    vehicle_assignment = request_vehicle_fn(fleet, req)
+
+    # 2) escolher casa suplente
+    safe_house = next((h for h in houses if h.type == "SUPLENTE" and h.current_family_id is None), None)
+
+    if safe_house:
+        assign_house_fn(safe_house, victim_id, houses)
+
+    return {
+        "vehicle": vehicle_assignment,
+        "house": safe_house.id if safe_house else None
+    }
