@@ -1,186 +1,119 @@
-# modules/mobility.py
+"""
+Mobility Module
+---------------
+
+This module manages the assignment of vehicles to transport requests within
+the Cerebrus Engine. It provides simple fleet management logic, selecting
+an available vehicle and marking it as in service.
+
+The module is intentionally minimal and acts as a demonstration of how a
+future mobility system could integrate with routing, priorities, and
+real-time fleet optimization.
+"""
 
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Literal
-import random
-
-VehicleStatus = Literal[
-    "operacional",
-    "em_servico",
-    "avariado",
-    "em_reboque",
-    "em_manutencao",
-    "fora_de_servico"
-]
-
-VehicleType = Literal[
-    "carro_autonomo",
-    "bicicleta",
-    "barco_autonomo",
-    "drone",
-    "reboque",
-    "super_reboque"
-]
-
-Ownership = Literal["publico", "privado", "libertado", "reciclado"]
+from typing import Optional, Dict, Any, List
 
 
 @dataclass
 class Vehicle:
+    """Represents a vehicle in the mobility fleet."""
     id: str
-    type: VehicleType
-    status: VehicleStatus
-    ownership: Ownership
-    location: str  # nome do bloco ou ponto
-    battery: float = 100.0  # %
+    type: str
+    location: str
+    available: bool = True
+    in_service: bool = False
 
 
 @dataclass
-class MobilityRequest:
-    person_id: str
+class TransportRequest:
+    """Represents a transport request made by a resident or module."""
+    id: str
     origin: str
     destination: str
-    priority: int  # 0 normal, 1 idosos, 2 emergência, 3 Força Cívica
+    priority: int = 1  # Placeholder for future priority logic
 
 
 @dataclass
-class MobilityAssignment:
+class TransportAssignmentResult:
+    """Result of a transport assignment attempt."""
+    success: bool
     vehicle_id: Optional[str]
-    reason: str
+    request_id: Optional[str]
+    message: str
+    details: Dict[str, Any]
 
 
-# --------------------------
-# Funções internas
-# --------------------------
+class MobilityModule:
+    """
+    Simple mobility assignment module.
 
-def find_available_vehicle(fleet: Dict[str, Vehicle], origin: str) -> Optional[Vehicle]:
-    """Escolhe o veículo operacional mais próximo (simplificado)."""
-    candidates = [
-        v for v in fleet.values()
-        if v.status == "operacional" and v.ownership in ("publico", "libertado")
-    ]
-    if not candidates:
+    This module assigns the first available vehicle to a predefined
+    transport request. It is intentionally simple and acts as a
+    demonstration of how a real mobility system could integrate with
+    the Cerebrus Engine.
+    """
+
+    def __init__(self):
+        # Demo fleet
+        self.fleet: List[Vehicle] = [
+            Vehicle(id="V-001", type="Electric Car", location="Block A"),
+            Vehicle(id="V-002", type="Electric Van", location="Block B"),
+            Vehicle(id="V-003", type="Autonomous Pod", location="Block C"),
+        ]
+
+        # Demo request
+        self.demo_request = TransportRequest(
+            id="T-001",
+            origin="Block A — Sector 2",
+            destination="Block C — Sector 1",
+            priority=1
+        )
+
+    def _find_available_vehicle(self) -> Optional[Vehicle]:
+        """Returns the first available vehicle in the fleet."""
+        for v in self.fleet:
+            if v.available and not v.in_service:
+                return v
         return None
-    return random.choice(candidates)
 
+    def assign_transport(self) -> TransportAssignmentResult:
+        """
+        Assigns an available vehicle to the demo transport request.
 
-def find_reboque(fleet: Dict[str, Vehicle]) -> Optional[Vehicle]:
-    """Procura um reboque disponível."""
-    for v in fleet.values():
-        if v.type == "reboque" and v.status == "operacional":
-            return v
-    return None
+        Returns:
+            TransportAssignmentResult: structured result for logging and UI display.
+        """
 
+        vehicle = self._find_available_vehicle()
 
-def find_super_reboque(fleet: Dict[str, Vehicle]) -> Optional[Vehicle]:
-    """Reboque dos reboques — raro."""
-    for v in fleet.values():
-        if v.type == "super_reboque" and v.status == "operacional":
-            return v
-    return None
+        if not vehicle:
+            return TransportAssignmentResult(
+                success=False,
+                vehicle_id=None,
+                request_id=self.demo_request.id,
+                message="No available vehicles in the fleet.",
+                details={
+                    "origin": self.demo_request.origin,
+                    "destination": self.demo_request.destination,
+                    "priority": self.demo_request.priority
+                }
+            )
 
+        # Perform assignment
+        vehicle.available = False
+        vehicle.in_service = True
 
-# --------------------------
-# API principal do módulo
-# --------------------------
-
-def request_vehicle(
-    fleet: Dict[str, Vehicle],
-    req: MobilityRequest
-) -> MobilityAssignment:
-    """Pedido normal de mobilidade."""
-
-    # prioridade alta → tentar veículo imediatamente
-    vehicle = find_available_vehicle(fleet, req.origin)
-
-    if vehicle:
-        vehicle.status = "em_servico"
-        return MobilityAssignment(vehicle_id=vehicle.id, reason="Veículo atribuído")
-
-    # sem veículos → tentar redundância
-    return MobilityAssignment(vehicle_id=None, reason="Sem veículos disponíveis")
-
-
-def handle_breakdown(
-    fleet: Dict[str, Vehicle],
-    vehicle_id: str
-) -> str:
-    """Processa avaria e ativa redundância."""
-
-    if vehicle_id not in fleet:
-        return "Veículo inexistente"
-
-    vehicle = fleet[vehicle_id]
-    vehicle.status = "avariado"
-
-    # 1) chamar reboque
-    reboque = find_reboque(fleet)
-    if reboque:
-        reboque.status = "em_servico"
-        vehicle.status = "em_reboque"
-        return f"Reboque {reboque.id} enviado para {vehicle.id}"
-
-    # 2) se o reboque também falhar → super reboque
-    super_r = find_super_reboque(fleet)
-    if super_r:
-        super_r.status = "em_servico"
-        vehicle.status = "em_reboque"
-        return f"Super-reboque {super_r.id} enviado para {vehicle.id}"
-
-    # 3) falha total (muito raro)
-    return "Falha crítica: nenhum reboque disponível"
-
-
-def return_to_base_for_maintenance(
-    fleet: Dict[str, Vehicle],
-    vehicle_id: str,
-    base: str
-) -> str:
-    """Veículo regressa ao ponto de recolha para manutenção."""
-
-    if vehicle_id not in fleet:
-        return "Veículo inexistente"
-
-    v = fleet[vehicle_id]
-    v.status = "em_manutencao"
-    v.location = base
-    v.battery = 100.0
-
-    return f"{v.id} em manutenção no ponto {base}"
-
-
-# --------------------------
-# Gestão de carros privados
-# --------------------------
-
-def register_private_vehicle(fleet: Dict[str, Vehicle], vehicle: Vehicle) -> None:
-    fleet[vehicle.id] = vehicle
-
-
-def liberate_private_vehicle(fleet: Dict[str, Vehicle], vehicle_id: str) -> str:
-    if vehicle_id not in fleet:
-        return "Veículo inexistente"
-    v = fleet[vehicle_id]
-    v.ownership = "libertado"
-    return f"Veículo {vehicle_id} libertado para o sistema"
-
-
-def recycle_private_vehicle(fleet: Dict[str, Vehicle], vehicle_id: str) -> str:
-    if vehicle_id not in fleet:
-        return "Veículo inexistente"
-    v = fleet[vehicle_id]
-    v.ownership = "reciclado"
-    v.status = "fora_de_servico"
-    return f"Veículo {vehicle_id} reciclado e removido da frota ativa"
-
-# ligação com Justiça
-
-def block_mobility_access(fleet, person_id):
-    """
-    Bloqueia qualquer veículo que esteja associado ao agressor.
-    """
-    for v in fleet.values():
-        if getattr(v, "assigned_to", None) == person_id:
-            v.status = "fora_de_servico"
-
-    return f"Acessos de mobilidade bloqueados para {person_id}"
+        return TransportAssignmentResult(
+            success=True,
+            vehicle_id=vehicle.id,
+            request_id=self.demo_request.id,
+            message="Vehicle successfully assigned to transport request.",
+            details={
+                "vehicle_type": vehicle.type,
+                "vehicle_location": vehicle.location,
+                "origin": self.demo_request.origin,
+                "destination": self.demo_request.destination,
+                "priority": self.demo_request.priority
+            }
+        )
