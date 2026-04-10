@@ -132,13 +132,19 @@ Código
 index.html
 You can open it by:
 
-Double‑clicking it
+Writing in your browser:
+```python
+http://127.0.0.1:5000
+```
 
-Or dragging it into your browser
+Double‑clicking it (might not work)
+
+Or dragging it into your browser (might not work)
 
 The interface will load locally and communicate with the Flask backend.
 
 ## 🌐 Using the Web Interface
+
 The interface includes buttons for:
 
 Requesting a house
