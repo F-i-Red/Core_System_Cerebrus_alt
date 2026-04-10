@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Cerebrus OS — Interface</title>
@@ -32,16 +32,16 @@
 
 <h1>Cerebrus OS — Interface</h1>
 
-<button onclick="callAPI('/request_house')">Pedir Casa</button>
-<button onclick="callAPI('/request_transport')">Pedir Transporte</button>
-<button onclick="callAPI('/send_residue')">Enviar Resíduo</button>
-<button onclick="callAPI('/process_incident')">Processar Incidente</button>
-<button onclick="callAPI('/civic_intervention')">Força Cívica</button>
-<button onclick="callAPI('/update_ecology')">Atualizar Ecologia</button>
-<button onclick="callAPI('/vote')">Votar</button>
-<button onclick="callAPI('/logs')">Ver Logs Públicos</button>
+<button onclick="callAPI('/request_house')">Request House</button>
+<button onclick="callAPI('/request_transport')">Request Transport</button>
+<button onclick="callAPI('/send_residue')">Send Residue</button>
+<button onclick="callAPI('/process_incident')">Process Incident</button>
+<button onclick="callAPI('/civic_intervention')">Civic Force Intervention</button>
+<button onclick="callAPI('/update_ecology')">Update Ecology</button>
+<button onclick="callAPI('/vote')">Vote</button>
+<button onclick="callAPI('/logs')">View Public Logs</button>
 
-<div id="output">Resultados aparecerão aqui...</div>
+<div id="output">Results will appear here...</div>
 
 <script>
     function callAPI(endpoint) {
@@ -50,6 +50,10 @@
             .then(data => {
                 document.getElementById("output").textContent =
                     JSON.stringify(data, null, 2);
+            })
+            .catch(err => {
+                document.getElementById("output").textContent =
+                    "Error: " + err;
             });
     }
 </script>
