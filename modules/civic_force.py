@@ -174,3 +174,24 @@ def create_urgent_task(
     )
     tasks[task_id] = task
     return task
+
+# ligação com Justiça
+
+def civic_force_intervention(members, incident):
+    """
+    Seleciona automaticamente membros com skills de segurança
+    para intervir num incidente de risco.
+    """
+    candidates = [
+        m for m in members.values()
+        if "seguranca" in m.skills and m.available
+    ]
+
+    if not candidates:
+        return "Nenhum membro da Força Cívica disponível"
+
+    chosen = random.choice(candidates)
+    chosen.on_mission = True
+    chosen.available = False
+
+    return f"Força Cívica: {chosen.name} enviado para incidente {incident.id}"
