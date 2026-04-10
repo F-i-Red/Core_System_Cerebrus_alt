@@ -1,174 +1,232 @@
-# modules/anti_capture.py
+"""
+Anti-Capture Module
+-------------------
+
+This module acts as the immune system of the Cerebrus Engine.
+It detects patterns of institutional capture, manipulation, opacity,
+fear dynamics, and bureaucratic stagnation.
+
+When a capture signal is detected, the module triggers corrective actions:
+- Restorative or corrective assemblies
+- Transparency injections
+- Civic Force audits
+
+This is a simplified but functional model of systemic anti-capture logic.
+"""
 
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Literal
-import time
-import random
+from typing import List, Dict, Any, Optional
 
-CaptureType = Literal[
-    "propaganda",
-    "burocracia",
-    "medo",
-    "captura_poder",
-    "manipulacao",
-    "opacidade"
-]
 
-Severity = Literal["baixo", "medio", "alto", "critico"]
-
+# ---------------------------------------------------------
+# Data Models
+# ---------------------------------------------------------
 
 @dataclass
 class CaptureSignal:
-    id: str
-    type: CaptureType
-    source: str           # módulo ou pessoa
+    """
+    Represents a detected capture signal.
+
+    Types include:
+    - propaganda
+    - bureaucracy
+    - fear
+    - power_capture
+    - opacity
+    - manipulation
+    """
+    type: str
+    severity: str  # "low", "medium", "high"
     description: str
-    severity: Severity
-    timestamp: float
+    metadata: Optional[Dict[str, Any]] = None
 
 
-@dataclass
-class AntiCaptureAction:
-    signal_id: str
-    action: str
-    details: str
-    timestamp: float
+# ---------------------------------------------------------
+# Anti-Capture Module
+# ---------------------------------------------------------
 
-
-# --------------------------
-# Deteção de padrões
-# --------------------------
-
-def detect_propaganda(text: str) -> Optional[CaptureSignal]:
+class AntiCaptureModule:
     """
-    Deteção simples de propaganda/manipulação.
-    """
-    keywords = ["inimigo", "traidor", "obrigatório", "única solução", "culpados"]
-    if any(k in text.lower() for k in keywords):
-        return CaptureSignal(
-            id=f"signal_{int(time.time())}",
-            type="propaganda",
-            source="comunicacao",
-            description="Padrões de linguagem manipulativa detectados",
-            severity="medio",
-            timestamp=time.time()
-        )
-    return None
+    Core anti-capture module.
 
+    Detects:
+    - Manipulative language (propaganda)
+    - Excessive bureaucracy
+    - Fear patterns in reports
+    - Power concentration in voting
+    - Opacity in decision-making
 
-def detect_bureaucracy(delay_days: int, steps: int) -> Optional[CaptureSignal]:
+    Responds with:
+    - Corrective assemblies
+    - Transparency injections
+    - Civic Force audits
     """
-    Se um processo tem demasiados passos ou demora excessiva.
-    """
-    if delay_days > 7 or steps > 5:
-        return CaptureSignal(
-            id=f"signal_{int(time.time())}",
-            type="burocracia",
-            source="processo",
-            description="Processo excessivamente lento ou complexo",
-            severity="alto" if delay_days > 14 else "medio",
-            timestamp=time.time()
-        )
-    return None
 
+    # -----------------------------------------------------
+    # Detection Methods
+    # -----------------------------------------------------
 
-def detect_fear_pattern(reports: List[str]) -> Optional[CaptureSignal]:
-    """
-    Se várias pessoas reportam medo, silêncio ou autocensura.
-    """
-    fear_words = ["medo", "calar", "não posso falar", "represália"]
-    count = sum(1 for r in reports if any(w in r.lower() for w in fear_words))
+    def detect_propaganda(self, text: str) -> Optional[CaptureSignal]:
+        """
+        Detects manipulative or propagandistic language.
 
-    if count >= 3:
-        return CaptureSignal(
-            id=f"signal_{int(time.time())}",
-            type="medo",
-            source="comunidade",
-            description="Padrão de medo sistémico detectado",
-            severity="alto",
-            timestamp=time.time()
-        )
-    return None
+        Keywords are simplified for demonstration.
+        """
 
+        propaganda_keywords = [
+            "enemy", "traitor", "purity", "absolute truth",
+            "only we", "everyone else", "threat", "corrupt"
+        ]
 
-def detect_power_capture(votes: List[str], threshold: float = 0.8) -> Optional[CaptureSignal]:
-    """
-    Se um grupo domina votações de forma anómala.
-    """
-    if not votes:
+        if any(k in text.lower() for k in propaganda_keywords):
+            return CaptureSignal(
+                type="propaganda",
+                severity="medium",
+                description="Detected manipulative or polarizing language.",
+                metadata={"text": text}
+            )
+
         return None
 
-    most_common = max(set(votes), key=votes.count)
-    ratio = votes.count(most_common) / len(votes)
+    def detect_bureaucracy(self, delay_days: int, steps: int) -> Optional[CaptureSignal]:
+        """
+        Detects excessive bureaucracy based on delays and number of steps.
+        """
 
-    if ratio >= threshold:
-        return CaptureSignal(
-            id=f"signal_{int(time.time())}",
-            type="captura_poder",
-            source="assembleia",
-            description="Grupo dominante detectado em votações",
-            severity="critico",
-            timestamp=time.time()
-        )
-    return None
+        if delay_days > 30 or steps > 10:
+            return CaptureSignal(
+                type="bureaucracy",
+                severity="high" if delay_days > 60 else "medium",
+                description="Detected excessive bureaucratic delay.",
+                metadata={"delay_days": delay_days, "steps": steps}
+            )
 
+        return None
 
-# --------------------------
-# Ações corretivas
-# --------------------------
+    def detect_fear_pattern(self, reports: List[str]) -> Optional[CaptureSignal]:
+        """
+        Detects fear or silence patterns in community reports.
+        """
 
-def corrective_assembly(signal: CaptureSignal) -> AntiCaptureAction:
-    """
-    Convoca assembleia de correção.
-    """
-    return AntiCaptureAction(
-        signal_id=signal.id,
-        action="assembleia_corretiva",
-        details=f"Assembleia convocada para tratar: {signal.type}",
-        timestamp=time.time()
-    )
+        fear_keywords = ["afraid", "fear", "unsafe", "threatened", "silence"]
 
+        count = sum(1 for r in reports if any(k in r.lower() for k in fear_keywords))
 
-def transparency_injection(signal: CaptureSignal) -> AntiCaptureAction:
-    """
-    Aumenta transparência em módulos capturados.
-    """
-    return AntiCaptureAction(
-        signal_id=signal.id,
-        action="transparencia_extra",
-        details=f"Logs e decisões do módulo {signal.source} tornados públicos",
-        timestamp=time.time()
-    )
+        if count >= 3:
+            return CaptureSignal(
+                type="fear",
+                severity="high",
+                description="Detected fear pattern in community reports.",
+                metadata={"reports": reports}
+            )
 
+        return None
 
-def civic_force_audit(signal: CaptureSignal) -> AntiCaptureAction:
-    """
-    Força Cívica faz auditoria física ou processual.
-    """
-    return AntiCaptureAction(
-        signal_id=signal.id,
-        action="auditoria_civica",
-        details=f"Força Cívica enviada para auditar {signal.source}",
-        timestamp=time.time()
-    )
+    def detect_power_capture(self, votes: List[Dict[str, Any]]) -> Optional[CaptureSignal]:
+        """
+        Detects concentration of power in voting patterns.
 
+        Example:
+        If one group consistently dominates >70% of weighted votes.
+        """
 
-# --------------------------
-# Pipeline principal
-# --------------------------
+        group_totals = {}
 
-def process_capture_signal(signal: CaptureSignal) -> List[AntiCaptureAction]:
-    """
-    Pipeline:
-    - assembleia corretiva
-    - transparência extra
-    - auditoria da Força Cívica
-    """
+        for v in votes:
+            group = v.get("group", "unknown")
+            weight = v.get("weight", 1.0)
+            group_totals[group] = group_totals.get(group, 0) + weight
 
-    actions = [
-        corrective_assembly(signal),
-        transparency_injection(signal),
-        civic_force_audit(signal)
-    ]
+        total = sum(group_totals.values())
 
-    return actions
+        for group, w in group_totals.items():
+            if w / total > 0.7:
+                return CaptureSignal(
+                    type="power_capture",
+                    severity="high",
+                    description=f"Detected power concentration in group '{group}'.",
+                    metadata={"group": group, "weight_share": w / total}
+                )
+
+        return None
+
+    def detect_opacity(self, missing_logs: int) -> Optional[CaptureSignal]:
+        """
+        Detects opacity based on missing or incomplete logs.
+        """
+
+        if missing_logs > 5:
+            return CaptureSignal(
+                type="opacity",
+                severity="medium",
+                description="Detected missing or incomplete logs.",
+                metadata={"missing_logs": missing_logs}
+            )
+
+        return None
+
+    # -----------------------------------------------------
+    # Corrective Actions
+    # -----------------------------------------------------
+
+    def corrective_assembly(self, signal: CaptureSignal) -> Dict[str, Any]:
+        """
+        Creates a corrective assembly to address systemic issues.
+        """
+
+        return {
+            "action": "corrective_assembly",
+            "focus": signal.type,
+            "severity": signal.severity,
+            "description": signal.description
+        }
+
+    def transparency_injection(self, signal: CaptureSignal) -> Dict[str, Any]:
+        """
+        Forces additional transparency in the affected module.
+        """
+
+        return {
+            "action": "transparency_injection",
+            "target": signal.type,
+            "details": signal.metadata
+        }
+
+    def civic_force_audit(self, signal: CaptureSignal) -> Dict[str, Any]:
+        """
+        Requests a Civic Force audit for high-severity signals.
+        """
+
+        return {
+            "action": "civic_force_audit",
+            "priority": 3,
+            "required_skills": ["inspection", "justice"],
+            "location": "Block A",
+            "signal": signal.type
+        }
+
+    # -----------------------------------------------------
+    # Full Processing Pipeline
+    # -----------------------------------------------------
+
+    def process_capture_signal(self, signal: CaptureSignal) -> Dict[str, Any]:
+        """
+        Processes a capture signal and triggers corrective actions.
+
+        Returns:
+            dict: structured result for logging and UI.
+        """
+
+        actions = [
+            self.corrective_assembly(signal),
+            self.transparency_injection(signal)
+        ]
+
+        if signal.severity == "high":
+            actions.append(self.civic_force_audit(signal))
+
+        return {
+            "signal_type": signal.type,
+            "severity": signal.severity,
+            "actions": actions
+        }
