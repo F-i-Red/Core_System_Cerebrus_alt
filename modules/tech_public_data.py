@@ -1,176 +1,238 @@
-# modules/tech_public_data.py
+"""
+Public Data & Transparency Module
+---------------------------------
+
+This module implements the transparency layer of the Cerebrus Engine.
+It provides:
+
+- A public ledger for all modules
+- Public, private, and anonymized logging
+- A unified interface for requesting data
+- Explanations for automated decisions
+
+The philosophy:
+Every action taken by the system must be traceable, explainable,
+and accessible at the appropriate visibility level.
+"""
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Literal
-import time
-import hashlib
-import json
+from typing import Any, Dict, List, Optional
 
 
-# --------------------------
-# Tipos base
-# --------------------------
-
-LogVisibility = Literal["publico", "privado", "anonimizado"]
+# ---------------------------------------------------------
+# Data Models
+# ---------------------------------------------------------
 
 @dataclass
-class AuditLog:
-    id: str
-    timestamp: float
+class LedgerEntry:
+    """
+    Represents a single entry in the public ledger.
+
+    Visibility levels:
+    - public: visible to everyone
+    - private: visible only to the owner
+    - anon: anonymized aggregate data
+    """
     module: str
     action: str
-    details: dict
-    visibility: LogVisibility = "publico"
-
-
-@dataclass
-class EncryptedData:
-    owner_id: str
-    encrypted_blob: str
+    details: Dict[str, Any]
+    visibility: str  # "public", "private", "anon"
 
 
 @dataclass
 class Explanation:
-    module: str
-    action: str
+    """
+    Represents an explanation for an automated decision.
+
+    Includes:
+    - reasoning: human-readable explanation
+    - inputs_used: data that influenced the decision
+    """
     reasoning: str
-    inputs_used: List[str]
+    inputs_used: Dict[str, Any]
 
 
-# --------------------------
-# Encriptação simples (placeholder)
-# --------------------------
-
-def encrypt_data(owner_id: str, data: dict) -> EncryptedData:
-    """
-    Encriptação simbólica (placeholder).
-    """
-    blob = json.dumps(data)
-    encrypted = hashlib.sha256(blob.encode()).hexdigest()
-    return EncryptedData(owner_id=owner_id, encrypted_blob=encrypted)
-
-
-def verify_owner(owner_id: str, encrypted: EncryptedData) -> bool:
-    return owner_id == encrypted.owner_id
-
-
-# --------------------------
-# Logs públicos e auditáveis
-# --------------------------
+# ---------------------------------------------------------
+# Public Ledger
+# ---------------------------------------------------------
 
 class PublicLedger:
     """
-    Livro-razão público: cada módulo regista ações importantes.
+    Central ledger for all modules.
+
+    Stores:
+    - Public actions
+    - Private actions
+    - Anonymized actions
+
+    Provides:
+    - append()
+    - get_public()
+    - get_private(owner_id)
+    - get_anon()
     """
 
     def __init__(self):
-        self.logs: Dict[str, AuditLog] = {}
+        self.entries: List[LedgerEntry] = []
 
-    def add_log(self, module: str, action: str, details: dict, visibility: LogVisibility = "publico"):
-        log_id = f"log_{len(self.logs)+1}"
-        entry = AuditLog(
-            id=log_id,
-            timestamp=time.time(),
+    def append(self, module: str, action: str, details: Dict[str, Any], visibility: str = "public") -> None:
+        """
+        Appends a new entry to the ledger.
+        """
+
+        entry = LedgerEntry(
             module=module,
             action=action,
             details=details,
             visibility=visibility
         )
-        self.logs[log_id] = entry
-        return entry
 
-    def get_public_logs(self) -> List[AuditLog]:
-        return [l for l in self.logs.values() if l.visibility == "publico"]
+        self.entries.append(entry)
 
-    def get_logs_for_owner(self, owner_id: str) -> List[AuditLog]:
-        """
-        Logs privados só podem ser vistos pelo dono.
-        """
+    def get_public(self) -> List[Dict[str, Any]]:
+        """Returns all public ledger entries."""
         return [
-            l for l in self.logs.values()
-            if l.visibility == "privado" and l.details.get("owner_id") == owner_id
+            {
+                "module": e.module,
+                "action": e.action,
+                "details": e.details
+            }
+            for e in self.entries if e.visibility == "public"
+        ]
+
+    def get_private(self, owner_id: str) -> List[Dict[str, Any]]:
+        """Returns private entries belonging to a specific owner."""
+        return [
+            {
+                "module": e.module,
+                "action": e.action,
+                "details": e.details
+            }
+            for e in self.entries
+            if e.visibility == "private" and e.details.get("owner_id") == owner_id
+        ]
+
+    def get_anon(self) -> List[Dict[str, Any]]:
+        """Returns anonymized entries."""
+        return [
+            {
+                "module": e.module,
+                "action": e.action,
+                "summary": "anonymized_data"
+            }
+            for e in self.entries if e.visibility == "anon"
         ]
 
 
-# --------------------------
-# IA auditável e explicável
-# --------------------------
-
-def explain_decision(module: str, action: str, inputs: dict, reasoning: str) -> Explanation:
-    """
-    Cada decisão automatizada deve gerar uma explicação.
-    """
-    return Explanation(
-        module=module,
-        action=action,
-        reasoning=reasoning,
-        inputs_used=list(inputs.keys())
-    )
-
-
-# --------------------------
-# Painéis de bairro
-# --------------------------
-
-@dataclass
-class NeighborhoodPanel:
-    id: str
-    public_data: dict  # ex: consumos, resíduos, mobilidade, projetos
-    last_update: float = 0.0
-
-    def update(self, new_data: dict):
-        self.public_data.update(new_data)
-        self.last_update = time.time()
-
-
-# --------------------------
-# API ética
-# --------------------------
+# ---------------------------------------------------------
+# Ethical API Layer
+# ---------------------------------------------------------
 
 class EthicalAPI:
     """
-    API que só permite:
-    - dados públicos
-    - dados anonimizados
-    - dados privados com consentimento
+    Ethical API wrapper for the Cerebrus Engine.
+
+    Provides:
+    - request_public_data()
+    - request_private_data()
+    - request_anon_data()
+    - explain_decision()
+
+    Ensures:
+    - Privacy
+    - Transparency
+    - Auditability
     """
 
     def __init__(self, ledger: PublicLedger):
         self.ledger = ledger
 
-    def request_public_data(self, panel: NeighborhoodPanel):
-        self.ledger.add_log(
-            module="tech_public_data",
-            action="request_public_data",
-            details={"panel_id": panel.id},
-            visibility="publico"
-        )
-        return panel.public_data
+    # -----------------------------------------------------
+    # Public Data
+    # -----------------------------------------------------
 
-    def request_private_data(self, encrypted: EncryptedData, requester_id: str):
-        if verify_owner(requester_id, encrypted):
-            self.ledger.add_log(
-                module="tech_public_data",
-                action="request_private_data",
-                details={"owner_id": requester_id},
-                visibility="privado"
-            )
-            return encrypted.encrypted_blob
-        else:
-            self.ledger.add_log(
+    def request_public_data(self, module: str) -> List[Dict[str, Any]]:
+        """
+        Returns public data for a module and logs the request.
+        """
+
+        self.ledger.append(
+            module="tech_public_data",
+            action="public_data_request",
+            details={"requested_module": module},
+            visibility="public"
+        )
+
+        return self.ledger.get_public()
+
+    # -----------------------------------------------------
+    # Private Data
+    # -----------------------------------------------------
+
+    def request_private_data(self, owner_id: str) -> List[Dict[str, Any]]:
+        """
+        Returns private data belonging to the owner.
+
+        Logs unauthorized attempts as public warnings.
+        """
+
+        private_data = self.ledger.get_private(owner_id)
+
+        if not private_data:
+            self.ledger.append(
                 module="tech_public_data",
                 action="unauthorized_access_attempt",
-                details={"attempted_by": requester_id},
-                visibility="publico"
+                details={"owner_id": owner_id},
+                visibility="public"
             )
-            return None
+            return []
 
-    def request_anon_data(self, panel: NeighborhoodPanel):
-        self.ledger.add_log(
+        self.ledger.append(
             module="tech_public_data",
-            action="request_anon_data",
-            details={"panel_id": panel.id},
-            visibility="publico"
+            action="private_data_request",
+            details={"owner_id": owner_id},
+            visibility="private"
         )
-        # devolve apenas dados agregados
-        return {k: v for k, v in panel.public_data.items() if not isinstance(v, dict)}
+
+        return private_data
+
+    # -----------------------------------------------------
+    # Anonymized Data
+    # -----------------------------------------------------
+
+    def request_anon_data(self) -> List[Dict[str, Any]]:
+        """
+        Returns anonymized data for aggregate analysis.
+        """
+
+        self.ledger.append(
+            module="tech_public_data",
+            action="anon_data_request",
+            details={},
+            visibility="public"
+        )
+
+        return self.ledger.get_anon()
+
+    # -----------------------------------------------------
+    # Explanations
+    # -----------------------------------------------------
+
+    def explain_decision(self, reasoning: str, inputs_used: Dict[str, Any]) -> Explanation:
+        """
+        Returns a structured explanation for an automated decision.
+        """
+
+        explanation = Explanation(
+            reasoning=reasoning,
+            inputs_used=inputs_used
+        )
+
+        self.ledger.append(
+            module="tech_public_data",
+            action="explanation_generated",
+            details={"reasoning": reasoning},
+            visibility="public"
+        )
+
+        return explanation
