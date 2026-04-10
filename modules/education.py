@@ -176,6 +176,7 @@ def enroll_in_curriculum(
 ) -> bool:
     """
     Ver
+    """
 
 # ligação com Justiça
 
