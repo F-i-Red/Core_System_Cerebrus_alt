@@ -1,261 +1,240 @@
-# modules/justice.py
+"""
+Justice Module
+--------------
+
+This module implements the restorative justice pipeline of the Cerebrus Engine.
+It handles incident evaluation, victim protection, aggressor containment,
+restorative assemblies, and integration with mobility and housing modules.
+
+The system prioritizes:
+1. Immediate protection of the victim.
+2. Restriction of aggressor access to prevent escalation.
+3. Restorative processes whenever possible.
+4. Containment measures with mandatory periodic review.
+5. Full transparency and auditability.
+
+This module is intentionally simplified but demonstrates how a real
+restorative justice system could integrate with the Cerebrus Engine.
+"""
 
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Literal
-import random
+from typing import Optional, Dict, Any, Callable
 
-IncidentType = Literal[
-    "violencia",
-    "perseguicao",
-    "materia_organica_anomala",
-    "acidente_grave",
-    "ameaça",
-]
 
-RiskLevel = Literal["baixo", "medio", "alto", "critico"]
-
-ContainmentStatus = Literal[
-    "nenhuma",
-    "monitorizacao",
-    "restricao_acessos",
-    "confinamento_temporario",
-    "internacao_comunitaria"
-]
-
+# ---------------------------------------------------------
+# Data Models
+# ---------------------------------------------------------
 
 @dataclass
 class Incident:
+    """Represents a justice incident reported in the system."""
     id: str
-    type: IncidentType
-    victim_id: Optional[str]
-    aggressor_id: Optional[str]
-    location: str
-    details: str
-    risk: RiskLevel = "baixo"
-    resolved: bool = False
+    type: str  # e.g., "violence", "harassment", "anomalous_organic_material"
+    description: str
+    victim_id: Optional[str] = None
+    aggressor_id: Optional[str] = None
+    severity: str = "medium"
 
 
 @dataclass
-class JusticeAction:
+class JusticeDecision:
+    """Represents the final decision for an incident."""
     incident_id: str
-    action: str
-    details: str
+    risk_level: str
+    victim_protection: Dict[str, Any]
+    aggressor_restrictions: Dict[str, Any]
+    restorative_process: Dict[str, Any]
+    containment: Dict[str, Any]
 
 
-@dataclass
-class ContainmentDecision:
-    aggressor_id: str
-    level: ContainmentStatus
-    reason: str
-    review_in_days: int
+# ---------------------------------------------------------
+# Justice Module
+# ---------------------------------------------------------
 
-
-# --------------------------
-# Avaliação de risco
-# --------------------------
-
-def evaluate_risk(incident: Incident, history: List[Incident]) -> RiskLevel:
+class JusticeModule:
     """
-    Avalia risco com base em:
-    - reincidência
-    - tipo de incidente
-    - proximidade física
-    - padrões anteriores
-    """
+    Core restorative justice module.
 
-    score = 0
-
-    # tipo de incidente
-    if incident.type == "materia_organica_anomala":
-        score += 5
-    if incident.type == "violencia":
-        score += 4
-    if incident.type == "perseguicao":
-        score += 3
-    if incident.type == "ameaça":
-        score += 2
-
-    # reincidência
-    if incident.aggressor_id:
-        past = [i for i in history if i.aggressor_id == incident.aggressor_id]
-        score += len(past)
-
-    # thresholds
-    if score >= 7:
-        return "critico"
-    if score >= 5:
-        return "alto"
-    if score >= 3:
-        return "medio"
-    return "baixo"
-
-
-# --------------------------
-# Proteção imediata da vítima
-# --------------------------
-
-def protect_victim(victim_id: str) -> JusticeAction:
-    """
-    Atribui habitação suplente segura e acompanhamento.
-    """
-    return JusticeAction(
-        incident_id="N/A",
-        action="protecao_vitima",
-        details=f"Vítima {victim_id} movida para habitação segura e atribuída equipa de apoio."
-    )
-
-
-# --------------------------
-# Bloqueio de acessos do agressor
-# --------------------------
-
-def restrict_aggressor_access(aggressor_id: str) -> JusticeAction:
-    """
-    Bloqueia transportes, terminais e casas partilhadas.
-    """
-    return JusticeAction(
-        incident_id="N/A",
-        action="restricao_acessos",
-        details=f"Agressor {aggressor_id} com acessos bloqueados à rede comunitária."
-    )
-
-
-# --------------------------
-# Contenção auditada
-# --------------------------
-
-def containment_decision(incident: Incident) -> ContainmentDecision:
-    """
-    Decide nível de contenção com base no risco.
+    Handles:
+    - Risk evaluation
+    - Victim protection
+    - Aggressor access restrictions
+    - Restorative assemblies
+    - Containment decisions
+    - Integration with mobility and housing
     """
 
-    if incident.risk == "baixo":
-        return ContainmentDecision(
-            aggressor_id=incident.aggressor_id,
-            level="monitorizacao",
-            reason="Risco baixo",
-            review_in_days=30
-        )
+    def __init__(self):
+        pass
 
-    if incident.risk == "medio":
-        return ContainmentDecision(
-            aggressor_id=incident.aggressor_id,
-            level="restricao_acessos",
-            reason="Risco médio",
-            review_in_days=30
-        )
+    # -----------------------------------------------------
+    # Risk Evaluation
+    # -----------------------------------------------------
 
-    if incident.risk == "alto":
-        return ContainmentDecision(
-            aggressor_id=incident.aggressor_id,
-            level="confinamento_temporario",
-            reason="Risco alto",
-            review_in_days=15
-        )
+    def evaluate_risk(self, incident: Incident) -> str:
+        """
+        Evaluates the risk level of an incident.
 
-    # risco crítico
-    return ContainmentDecision(
-        aggressor_id=incident.aggressor_id,
-        level="internacao_comunitaria",
-        reason="Risco crítico — ameaça persistente",
-        review_in_days=7
-    )
+        Returns:
+            str: "low", "medium", "high", or "critical"
+        """
 
+        if incident.type == "anomalous_organic_material":
+            return "high"
 
-# --------------------------
-# Assembleia restaurativa
-# --------------------------
+        if incident.type in ["violence", "harassment"]:
+            if incident.severity == "high":
+                return "critical"
+            return "high"
 
-def restorative_assembly(incident: Incident) -> JusticeAction:
-    """
-    Cria assembleia restaurativa ampliada.
-    """
-    return JusticeAction(
-        incident_id=incident.id,
-        action="assembleia_restaurativa",
-        details="Assembleia convocada para discutir reparação, impacto e medidas comunitárias."
-    )
+        return "medium"
 
+    # -----------------------------------------------------
+    # Victim Protection
+    # -----------------------------------------------------
 
-# --------------------------
-# Pipeline principal
-# --------------------------
+    def protect_victim(
+        self,
+        victim_id: str,
+        request_vehicle_fn: Callable[[], Dict[str, Any]],
+        assign_house_fn: Callable[[], Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Protects the victim by:
+        - Requesting a secure transport
+        - Assigning a safe temporary house
 
-def process_incident(
-    incident: Incident,
-    history: List[Incident]
-) -> List[JusticeAction]:
-    """
-    Pipeline completo:
-    - avaliar risco
-    - proteger vítima
-    - restringir agressor
-    - assembleia restaurativa
-    - contenção auditada
-    """
+        The functions are injected from the engine to avoid circular imports.
+        """
 
-    actions: List[JusticeAction] = []
+        vehicle = request_vehicle_fn()
+        house = assign_house_fn()
 
-    # 1) avaliar risco
-    incident.risk = evaluate_risk(incident, history)
+        return {
+            "transport_assigned": vehicle,
+            "safe_house_assigned": house
+        }
 
-    # 2) proteger vítima
-    if incident.victim_id:
-        actions.append(protect_victim(incident.victim_id))
+    # -----------------------------------------------------
+    # Aggressor Restrictions
+    # -----------------------------------------------------
 
-    # 3) restringir agressor
-    if incident.aggressor_id:
-        actions.append(restrict_aggressor_access(incident.aggressor_id))
+    def restrict_aggressor_access(self, aggressor_id: str) -> Dict[str, Any]:
+        """
+        Restricts aggressor access to:
+        - Shared housing
+        - Mobility services
+        - Sensitive areas
 
-    # 4) assembleia restaurativa
-    actions.append(restorative_assembly(incident))
+        This is a placeholder for a more complex access control system.
+        """
 
-    # 5) contenção auditada
-    if incident.aggressor_id:
-        decision = containment_decision(incident)
-        actions.append(
-            JusticeAction(
-                incident_id=incident.id,
-                action="contencao",
-                details=f"{decision.level} — revisão em {decision.review_in_days} dias"
+        return {
+            "aggressor_id": aggressor_id,
+            "restrictions": [
+                "mobility_services_blocked",
+                "shared_housing_blocked",
+                "restricted_from_sensitive_zones"
+            ]
+        }
+
+    # -----------------------------------------------------
+    # Restorative Assembly
+    # -----------------------------------------------------
+
+    def restorative_assembly(self, incident: Incident) -> Dict[str, Any]:
+        """
+        Creates a restorative assembly plan.
+
+        In a real system, this would involve:
+        - Mediators
+        - Community representatives
+        - Victim preferences
+        - Aggressor rehabilitation requirements
+        """
+
+        return {
+            "assembly_required": True,
+            "focus": "restoration_and_reintegration",
+            "incident_type": incident.type
+        }
+
+    # -----------------------------------------------------
+    # Containment Decision
+    # -----------------------------------------------------
+
+    def containment_decision(self, risk_level: str) -> Dict[str, Any]:
+        """
+        Decides the containment level for the aggressor.
+
+        Returns:
+            dict: containment plan with mandatory review.
+        """
+
+        if risk_level == "critical":
+            return {
+                "level": "community_internment",
+                "review_in_days": 7
+            }
+
+        if risk_level == "high":
+            return {
+                "level": "intensive_monitoring",
+                "review_in_days": 14
+            }
+
+        return {
+            "level": "light_monitoring",
+            "review_in_days": 30
+        }
+
+    # -----------------------------------------------------
+    # Full Incident Processing Pipeline
+    # -----------------------------------------------------
+
+    def process_incident(
+        self,
+        incident: Incident,
+        request_vehicle_fn: Callable[[], Dict[str, Any]],
+        assign_house_fn: Callable[[], Dict[str, Any]]
+    ) -> JusticeDecision:
+        """
+        Full justice pipeline:
+
+        1. Evaluate risk
+        2. Protect victim
+        3. Restrict aggressor access
+        4. Create restorative assembly
+        5. Decide containment level
+
+        Returns:
+            JusticeDecision: structured result for logging and UI.
+        """
+
+        risk = self.evaluate_risk(incident)
+
+        victim_protection = {}
+        if incident.victim_id:
+            victim_protection = self.protect_victim(
+                incident.victim_id,
+                request_vehicle_fn,
+                assign_house_fn
             )
+
+        aggressor_restrictions = {}
+        if incident.aggressor_id:
+            aggressor_restrictions = self.restrict_aggressor_access(
+                incident.aggressor_id
+            )
+
+        restorative = self.restorative_assembly(incident)
+        containment = self.containment_decision(risk)
+
+        return JusticeDecision(
+            incident_id=incident.id,
+            risk_level=risk,
+            victim_protection=victim_protection,
+            aggressor_restrictions=aggressor_restrictions,
+            restorative_process=restorative,
+            containment=containment
         )
-
-    incident.resolved = True
-    return actions
-
-# ligação com Mobilidade e Habitação
-
-def protect_victim_full_pipeline(
-    victim_id,
-    fleet,
-    houses,
-    assign_house_fn,
-    request_vehicle_fn
-):
-    """
-    Pipeline completo:
-    - pedir veículo seguro
-    - transportar vítima
-    - atribuir casa suplente segura
-    """
-
-    # 1) pedir veículo
-    req = {
-        "person_id": victim_id,
-        "origin": "local_incidente",
-        "destination": "zona_segura",
-        "priority": 3
-    }
-    vehicle_assignment = request_vehicle_fn(fleet, req)
-
-    # 2) escolher casa suplente
-    safe_house = next((h for h in houses if h.type == "SUPLENTE" and h.current_family_id is None), None)
-
-    if safe_house:
-        assign_house_fn(safe_house, victim_id, houses)
-
-    return {
-        "vehicle": vehicle_assignment,
-        "house": safe_house.id if safe_house else None
-    }
