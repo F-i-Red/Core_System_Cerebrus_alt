@@ -172,3 +172,15 @@ def recycle_private_vehicle(fleet: Dict[str, Vehicle], vehicle_id: str) -> str:
     v.ownership = "reciclado"
     v.status = "fora_de_servico"
     return f"Veículo {vehicle_id} reciclado e removido da frota ativa"
+
+# ligação com Justiça
+
+def block_mobility_access(fleet, person_id):
+    """
+    Bloqueia qualquer veículo que esteja associado ao agressor.
+    """
+    for v in fleet.values():
+        if getattr(v, "assigned_to", None) == person_id:
+            v.status = "fora_de_servico"
+
+    return f"Acessos de mobilidade bloqueados para {person_id}"
