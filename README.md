@@ -65,26 +65,47 @@ No other external libraries are required.
 ## 📁 Project Structure
 ### Código
 Core_System_Cerebrus/
+
 │
-├── core/
-│   ├── engine.py          # Cerebrus Engine (central orchestrator)
-│   └── types.py           # Shared dataclasses
+
+├── 📁 core/
+
+│   ├── ⚙️ engine.py
+
+│   └── 📄 types.py
+
 │
-├── modules/
-│   ├── housing.py
-│   ├── mobility.py
-│   ├── logistics.py
-│   ├── civic_force.py
-│   ├── justice.py
-│   ├── education.py
-│   ├── ecology.py
-│   ├── anti_capture.py
-│   └── tech_public_data.py
+
+├── 📁 modules/
+
+│   ├── 🏠 housing.py
+
+│   ├── 🚗 mobility.py
+
+│   ├── 📦 logistics.py
+
+│   ├── 🛡️ civic_force.py
+
+│   ├── ⚖️ justice.py
+
+│   ├── 🎓 education.py
+
+│   ├── 🌱 ecology.py
+
+│   ├── 🧩 anti_capture.py
+
+│   └── 🔍 tech_public_data.py
+
 │
-├── app.py                 # Flask backend API
-├── main.py                # Simulation script
-├── index.html             # Web interface
-└── README.md
+
+├── 🌐 app.py
+
+├── ▶️ main.py
+
+├── 🖥️ index.html
+
+└── 📘 README.md
+
 
 ## 🚀 Running the System
 ### 1. Start the Flask backend
