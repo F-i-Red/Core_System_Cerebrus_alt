@@ -4,9 +4,11 @@ from dataclasses import dataclass
 from typing import List, Dict, Optional, Literal
 
 InstitutionType = Literal["escola", "universidade", "centro_formacao"]
-
 ProposalStatus = Literal["aberta", "fechada"]
 
+# --------------------------
+# Estruturas base
+# --------------------------
 
 @dataclass
 class Institution:
@@ -21,6 +23,29 @@ class Institution:
 class Specialization:
     person_id: str
     tags: List[str]  # ex: ["saude", "educacao", "engenharia"]
+
+
+@dataclass
+class CurriculumPath:
+    id: str
+    name: str
+    required_tags: List[str]  # ex: ["engenharia", "robotica"]
+    duration_months: int
+    grants_civic_force_access: bool = False  # formação obrigatória para certas tarefas
+
+
+@dataclass
+class TrainingProject:
+    id: str
+    title: str
+    description: str
+    institution_id: str
+    curriculum_path_id: Optional[str] = None
+    participants: List[str] = None
+
+    def __post_init__(self):
+        if self.participants is None:
+            self.participants = []
 
 
 @dataclass
@@ -49,7 +74,7 @@ class TallyResult:
 
 
 # --------------------------
-# Funções internas
+# Peso de voto
 # --------------------------
 
 def get_vote_weight(
@@ -58,34 +83,36 @@ def get_vote_weight(
     institutions: Dict[str, Institution],
     proposal: Proposal
 ) -> float:
-    """
-    Peso do voto:
-    - base: 1
-    - +1 se tiver especialização no contexto (ex: "saude")
-    - +1 se for membro de instituição diretamente ligada (escola para educação, etc.)
-    """
 
     weight = 1.0
 
+    # especialização no tema → +1
     spec = specializations.get(person_id)
     if spec and proposal.context in spec.tags:
         weight += 1.0
 
-    # se for educação e a pessoa estiver numa escola → +1
+    # se for educação → escolas têm voto reforçado
     if proposal.context == "educacao":
         for inst in institutions.values():
             if inst.type == "escola" and person_id in inst.members:
                 weight += 1.0
                 break
 
-    # se for saúde e a pessoa tiver "saude" → já foi contado acima
-    # podemos expandir isto depois para outros contextos
+    # se for saúde → profissionais de saúde têm peso
+    if proposal.context == "saude":
+        if spec and "saude" in spec.tags:
+            weight += 1.0
+
+    # se for mobilidade → técnicos e Força Cívica têm peso
+    if proposal.context == "mobilidade":
+        if spec and ("engenharia" in spec.tags or "logistica" in spec.tags):
+            weight += 1.0
 
     return weight
 
 
 # --------------------------
-# API principal
+# Contagem de votos
 # --------------------------
 
 def tally_votes(
@@ -94,11 +121,6 @@ def tally_votes(
     specializations: Dict[str, Specialization],
     institutions: Dict[str, Institution]
 ) -> TallyResult:
-    """
-    Conta votos com peso, decide aprovação.
-    Regra simples:
-    - aprovado se peso_a_favor >= 1.2 * peso_contra
-    """
 
     total_for = 0.0
     total_against = 0.0
@@ -141,3 +163,16 @@ def tally_votes(
         approved=False,
         reason="Rejeitado ou sem maioria suficiente"
     )
+
+
+# --------------------------
+# Formação e Currículos
+# --------------------------
+
+def enroll_in_curriculum(
+    person_id: str,
+    curriculum: CurriculumPath,
+    specializations: Dict[str, Specialization]
+) -> bool:
+    """
+    Ver
