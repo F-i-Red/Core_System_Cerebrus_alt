@@ -98,11 +98,15 @@ Core_System_Cerebrus/
 
 │
 
+├── static/
+
+│   └── 🖥️ index.html
+
+│
+
 ├── 🌐 app.py
 
 ├── ▶️ main.py
-
-├── 🖥️ index.html
 
 └── 📘 README.md
 
