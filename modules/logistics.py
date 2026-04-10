@@ -157,3 +157,26 @@ def process_logistics_request(
 
     request.status = "erro"
     return None
+
+# ligação com Justiça
+
+def logistics_to_justice_bridge(scan_result, justice_incidents: Dict[str, object]):
+    """
+    Se o scanner detectar matéria orgânica anómala,
+    cria automaticamente um incidente de justiça.
+    """
+    if scan_result.alert == "materia_organica_anomala":
+        incident_id = f"incident_{scan_result.request_id}"
+
+        justice_incidents[incident_id] = {
+            "id": incident_id,
+            "type": "materia_organica_anomala",
+            "victim_id": None,
+            "aggressor_id": None,
+            "location": scan_result.destination,
+            "details": "Deteção de matéria orgânica anómala no fluxo de resíduos."
+        }
+
+        return incident_id
+
+    return None
