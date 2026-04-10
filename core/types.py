@@ -27,6 +27,8 @@ class Family:
     social_relevance_tags: List[str]
 
 
+# core/types.py (só este detalhe)
+
 @dataclass
 class House:
     id: str
@@ -34,5 +36,9 @@ class House:
     type: HouseType
     capacity: int
     current_family_id: Optional[str] = None
-    # ex: "acessivel_idosos", "plano_terreo"
     accessibility_tags: List[str] = None
+
+    def __post_init__(self):
+        if self.accessibility_tags is None:
+            self.accessibility_tags = []
+
