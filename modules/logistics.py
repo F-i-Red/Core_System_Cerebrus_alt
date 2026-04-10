@@ -1,182 +1,254 @@
-# modules/logistics.py
+"""
+Logistics Module
+----------------
+
+This module handles logistics operations within the Cerebrus Engine,
+including delivery assignments and residue processing. It acts as a
+bridge between logistics, mobility, ecology, and justice.
+
+Residue processing may trigger alerts (e.g., anomalous organic material),
+which can escalate into justice incidents. Delivery requests are routed
+to the mobility system for vehicle assignment.
+
+The module is intentionally simple and serves as a demonstration of how
+a real logistics system could integrate with the Cerebrus Engine.
+"""
 
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Literal
-import random
+from typing import Optional, Dict, Any, List
 
-FractionType = Literal[
-    "metal",
-    "plastico",
-    "vidro",
-    "organico",
-    "misto"
-]
 
-RequestType = Literal[
-    "encomenda",
-    "residuo"
-]
-
-LogStatus = Literal[
-    "pendente",
-    "em_processamento",
-    "concluido",
-    "erro"
-]
-
+# ---------------------------------------------------------
+# Data Models
+# ---------------------------------------------------------
 
 @dataclass
 class LogisticsRequest:
+    """Represents a logistics request (delivery or residue)."""
     id: str
-    person_id: str
-    type: RequestType
-    content: str
-    location: str  # terminal
-    status: LogStatus = "pendente"
+    type: str  # "delivery" or "residue"
+    origin: str
+    destination: Optional[str] = None
+    content: Optional[str] = None  # For residue classification
 
 
 @dataclass
 class ResidueScanResult:
-    request_id: str
-    fraction: FractionType
+    """Represents the result of scanning a residue container."""
+    fraction: str
     purity: float
     destination: str
-    alert: Optional[str] = None
+    alert: Optional[str] = None  # e.g., "anomalous_organic_material"
 
 
 @dataclass
-class DeliveryAssignment:
-    request_id: str
+class DeliveryAssignmentResult:
+    """Represents the result of assigning a delivery to a vehicle."""
+    success: bool
     vehicle_id: Optional[str]
-    reason: str
+    message: str
+    details: Dict[str, Any]
 
 
-# --------------------------
-# Funções internas
-# --------------------------
+# ---------------------------------------------------------
+# Logistics Module
+# ---------------------------------------------------------
 
-def classify_residue(content: str) -> FractionType:
-    """Classificação simples baseada em palavras-chave."""
-    content = content.lower()
-    if "metal" in content:
-        return "metal"
-    if "plast" in content:
-        return "plastico"
-    if "vidro" in content:
-        return "vidro"
-    if "resto" in content or "comida" in content:
-        return "organico"
-    return "misto"
+class LogisticsModule:
+    """
+    Core logistics module.
 
+    Handles:
+    - Delivery assignment (delegated to mobility)
+    - Residue classification and routing
+    - Automatic escalation to justice when anomalies are detected
+    """
 
-def compute_purity() -> float:
-    """Simulação de pureza (scanner real teria sensores)."""
-    return round(random.uniform(0.80, 0.99), 2)
+    def __init__(self):
+        # Demo vehicles (simulated mobility integration)
+        self.demo_fleet = [
+            {"id": "V-101", "type": "Electric Van", "available": True},
+            {"id": "V-102", "type": "Cargo Pod", "available": True},
+        ]
 
+    # -----------------------------------------------------
+    # Residue Processing
+    # -----------------------------------------------------
 
-def choose_destination(fraction: FractionType) -> str:
-    """Destino baseado na fração."""
-    if fraction in ("metal", "plastico", "vidro"):
-        return "centro_reaproveitamento_regional"
-    if fraction == "organico":
-        return "compostagem_local"
-    return "reciclagem_avancada"
+    def classify_residue(self, content: str) -> str:
+        """
+        Classifies residue based on keywords.
 
+        Returns:
+            str: residue fraction (e.g., "organic", "plastic", "metal").
+        """
+        content = content.lower()
 
-# --------------------------
-# API principal
-# --------------------------
+        if any(k in content for k in ["food", "vegetable", "fruit", "organic"]):
+            return "organic"
 
-def process_residue_request(
-    request: LogisticsRequest
-) -> ResidueScanResult:
-    """Processa resíduos: classifica, mede pureza, define destino."""
+        if any(k in content for k in ["plastic", "bottle", "packaging"]):
+            return "plastic"
 
-    fraction = classify_residue(request.content)
-    purity = compute_purity()
-    destination = choose_destination(fraction)
+        if any(k in content for k in ["metal", "aluminum", "steel"]):
+            return "metal"
 
-    alert = None
-    if "sangue" in request.content.lower() or "tecido" in request.content.lower():
-        alert = "materia_organica_anomala"
+        if any(k in content for k in ["glass", "jar", "bottle"]):
+            return "glass"
 
-    request.status = "concluido"
+        return "mixed"
 
-    return ResidueScanResult(
-        request_id=request.id,
-        fraction=fraction,
-        purity=purity,
-        destination=destination,
-        alert=alert
-    )
+    def compute_purity(self, content: str) -> float:
+        """
+        Computes a simulated purity score for the residue.
 
+        Returns:
+            float: purity between 0.0 and 1.0
+        """
+        content = content.lower()
 
-def assign_delivery(
-    fleet: Dict[str, object],  # módulo de mobilidade
-    request: LogisticsRequest
-) -> DeliveryAssignment:
-    """Atribui veículo para entrega de encomendas."""
+        if "blood" in content or "tissue" in content:
+            return 0.05  # extremely low purity → anomaly
 
-    # procurar veículo operacional
-    candidates = [
-        v for v in fleet.values()
-        if getattr(v, "status", None) == "operacional"
-        and getattr(v, "ownership", None) in ("publico", "libertado")
-    ]
+        if "mixed" in content:
+            return 0.4
 
-    if not candidates:
-        return DeliveryAssignment(
-            request_id=request.id,
-            vehicle_id=None,
-            reason="Sem veículos disponíveis"
+        return 0.85  # default high purity
+
+    def choose_destination(self, fraction: str, purity: float) -> str:
+        """
+        Chooses the appropriate processing destination.
+        """
+        if purity < 0.1:
+            return "hazardous_materials_center"
+
+        if fraction == "organic":
+            return "local_composting_unit"
+
+        if fraction == "plastic":
+            return "advanced_recycling_center"
+
+        if fraction == "metal":
+            return "regional_reuse_foundry"
+
+        if fraction == "glass":
+            return "glass_recovery_station"
+
+        return "mixed_recycling_center"
+
+    def process_residue_request(self, request: LogisticsRequest) -> ResidueScanResult:
+        """
+        Processes a residue request and returns a scan result.
+
+        May trigger an alert if anomalous organic material is detected.
+        """
+
+        fraction = self.classify_residue(request.content or "")
+        purity = self.compute_purity(request.content or "")
+        destination = self.choose_destination(fraction, purity)
+
+        alert = None
+        if purity < 0.1:
+            alert = "anomalous_organic_material"
+
+        return ResidueScanResult(
+            fraction=fraction,
+            purity=purity,
+            destination=destination,
+            alert=alert
         )
 
-    chosen = random.choice(candidates)
-    chosen.status = "em_servico"
+    # -----------------------------------------------------
+    # Delivery Processing
+    # -----------------------------------------------------
 
-    request.status = "concluido"
+    def _find_available_vehicle(self) -> Optional[Dict[str, Any]]:
+        """Returns the first available vehicle."""
+        for v in self.demo_fleet:
+            if v["available"]:
+                return v
+        return None
 
-    return DeliveryAssignment(
-        request_id=request.id,
-        vehicle_id=chosen.id,
-        reason="Entrega atribuída"
-    )
+    def assign_delivery(self, request: LogisticsRequest) -> DeliveryAssignmentResult:
+        """
+        Assigns a delivery request to an available vehicle.
+        """
 
+        vehicle = self._find_available_vehicle()
 
-def process_logistics_request(
-    fleet: Dict[str, object],
-    request: LogisticsRequest
-):
-    """Processa qualquer pedido de logística."""
+        if not vehicle:
+            return DeliveryAssignmentResult(
+                success=False,
+                vehicle_id=None,
+                message="No available vehicles for delivery.",
+                details={"request_id": request.id}
+            )
 
-    if request.type == "residuo":
-        return process_residue_request(request)
+        # Mark vehicle as in service
+        vehicle["available"] = False
 
-    if request.type == "encomenda":
-        return assign_delivery(fleet, request)
+        return DeliveryAssignmentResult(
+            success=True,
+            vehicle_id=vehicle["id"],
+            message="Delivery assigned to vehicle.",
+            details={
+                "vehicle_type": vehicle["type"],
+                "origin": request.origin,
+                "destination": request.destination
+            }
+        )
 
-    request.status = "erro"
-    return None
+    # -----------------------------------------------------
+    # Main Entry Point
+    # -----------------------------------------------------
 
-# ligação com Justiça
+    def process_logistics_request(self, request: LogisticsRequest) -> Dict[str, Any]:
+        """
+        Routes the request to the appropriate handler.
 
-def logistics_to_justice_bridge(scan_result, justice_incidents: Dict[str, object]):
-    """
-    Se o scanner detectar matéria orgânica anómala,
-    cria automaticamente um incidente de justiça.
-    """
-    if scan_result.alert == "materia_organica_anomala":
-        incident_id = f"incident_{scan_result.request_id}"
+        Returns:
+            dict: structured result for logging and UI display.
+        """
 
-        justice_incidents[incident_id] = {
-            "id": incident_id,
-            "type": "materia_organica_anomala",
-            "victim_id": None,
-            "aggressor_id": None,
-            "location": scan_result.destination,
-            "details": "Deteção de matéria orgânica anómala no fluxo de resíduos."
-        }
+        if request.type == "residue":
+            scan = self.process_residue_request(request)
+            return {
+                "type": "residue",
+                "fraction": scan.fraction,
+                "purity": scan.purity,
+                "destination": scan.destination,
+                "alert": scan.alert
+            }
 
-        return incident_id
+        if request.type == "delivery":
+            assignment = self.assign_delivery(request)
+            return {
+                "type": "delivery",
+                "success": assignment.success,
+                "vehicle_id": assignment.vehicle_id,
+                "message": assignment.message,
+                "details": assignment.details
+            }
 
-    return None
+        return {"error": "Unknown logistics request type."}
+
+    # -----------------------------------------------------
+    # Bridge to Justice
+    # -----------------------------------------------------
+
+    def logistics_to_justice_bridge(self, scan: ResidueScanResult) -> Optional[Dict[str, Any]]:
+        """
+        Converts a residue anomaly into a justice incident.
+
+        Returns:
+            dict or None: incident data if anomaly detected.
+        """
+
+        if scan.alert == "anomalous_organic_material":
+            return {
+                "type": "anomalous_organic_material",
+                "severity": "high",
+                "description": "Detected biological material inconsistent with normal residue.",
+            }
+
+        return None
