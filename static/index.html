@@ -397,9 +397,9 @@
                         <button class="action" onclick="callAPI('/send_residue')">Send Residue</button>
                         <button class="action" onclick="callAPI('/process_incident')">Process Incident</button>
                         <button class="action" onclick="callAPI('/civic_intervention')">Civic Force Intervention</button>
-                        <button class="action" onclick="callAPI('/update_ecology')">Update Ecology</button>
+                        <button class="action" onclick="updateEcologyAndChart()">Update Ecology</button>
                         <button class="action" onclick="callAPI('/vote')">Run Vote</button>
-                        <button class="action" onclick="callAPI('/logs')">Load Logs</button>
+                        <button class="action" onclick="loadLogs()">Load Logs</button>
                     </div>
 
                     <div id="overview-ecology" class="tab-section">
@@ -415,44 +415,43 @@
                     </div>
                 </div>
 
-<!-- HOUSING TAB -->
-<div class="main-tab" id="tab-housing" style="display:none;">
-    <div class="tab-buttons">
-        <button class="tab-btn active" onclick="setHousingTab('housing-dashboard', event)">Dashboard</button>
-        <button class="tab-btn" onclick="setHousingTab('housing-actions', event)">Actions</button>
-    </div>
+                <!-- HOUSING TAB -->
+                <div class="main-tab" id="tab-housing" style="display:none;">
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" onclick="setHousingTab('housing-dashboard', event)">Dashboard</button>
+                        <button class="tab-btn" onclick="setHousingTab('housing-actions', event)">Actions</button>
+                    </div>
 
-    <!-- DASHBOARD -->
-    <div id="housing-dashboard" class="tab-section active">
-        <p>Housing allocation metrics and system overview.</p>
+                    <!-- DASHBOARD -->
+                    <div id="housing-dashboard" class="tab-section active">
+                        <p>Housing allocation metrics and system overview.</p>
 
-        <button class="action" onclick="refreshHousingDashboard()">Refresh Housing Dashboard</button>
+                        <button class="action" onclick="refreshHousingDashboard()">Refresh Housing Dashboard</button>
 
-        <div style="margin-top:10px;">
-            <canvas id="housingBarChart" height="120"></canvas>
-        </div>
+                        <div style="margin-top:10px;">
+                            <canvas id="housingBarChart" height="120"></canvas>
+                        </div>
 
-        <div style="margin-top:20px; display:flex; gap:20px;">
-            <div style="flex:1;">
-                <canvas id="housingDoughnutChart" height="140"></canvas>
-            </div>
-            <div style="flex:1; font-size:12px;">
-                <h4 style="margin-bottom:6px; color:var(--accent);">Recent Housing Actions</h4>
-                <div id="housingActionsLog" style="white-space:pre-wrap; color:var(--text-muted);"></div>
-            </div>
-        </div>
-    </div>
+                        <div style="margin-top:20px; display:flex; gap:20px;">
+                            <div style="flex:1;">
+                                <canvas id="housingDoughnutChart" height="140"></canvas>
+                            </div>
+                            <div style="flex:1; font-size:12px;">
+                                <h4 style="margin-bottom:6px; color:var(--accent);">Recent Housing Actions</h4>
+                                <div id="housingActionsLog" style="white-space:pre-wrap; color:var(--text-muted);"></div>
+                            </div>
+                        </div>
+                    </div>
 
-    <!-- ACTIONS -->
-    <div id="housing-actions" class="tab-section">
-        <p>Manual housing actions.</p>
-        <button class="action" onclick="callAPI('/request_house')">Request House</button>
-        <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">
-            This demo assigns a predefined house to a predefined family and logs the decision in the public ledger.
-        </p>
-    </div>
-</div>
-
+                    <!-- ACTIONS -->
+                    <div id="housing-actions" class="tab-section">
+                        <p>Manual housing actions.</p>
+                        <button class="action" onclick="callAPI('/request_house')">Request House</button>
+                        <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">
+                            This demo assigns a predefined house to a predefined family and logs the decision in the public ledger.
+                        </p>
+                    </div>
+                </div>
 
                 <!-- MOBILITY TAB -->
                 <div class="main-tab" id="tab-mobility" style="display:none;">
@@ -824,6 +823,84 @@
         });
     }
 
+    // HOUSING DASHBOARD
+
+    let housingBarChart = null;
+    let housingDoughnutChart = null;
+
+    function setHousingTab(sectionId, ev) {
+        document.querySelectorAll('#tab-housing .tab-section').forEach(s => s.classList.remove('active'));
+        document.getElementById(sectionId).classList.add('active');
+
+        document.querySelectorAll('#tab-housing .tab-btn').forEach(b => b.classList.remove('active'));
+        if (ev) ev.currentTarget.classList.add('active');
+    }
+
+    function refreshHousingDashboard() {
+        // Simulated data
+        const available = 10 + Math.floor(Math.random() * 5);
+        const occupied = 8 + Math.floor(Math.random() * 4);
+        const waiting = 2 + Math.floor(Math.random() * 3);
+        const successRate = 60 + Math.floor(Math.random() * 30);
+
+        // Update actions log
+        const log = document.getElementById('housingActionsLog');
+        const timestamp = new Date().toLocaleTimeString();
+        log.textContent =
+            `[${timestamp}] Dashboard refreshed\n` +
+            `Available: ${available}\n` +
+            `Occupied: ${occupied}\n` +
+            `Waiting: ${waiting}\n` +
+            `Success Rate: ${successRate}%\n\n` +
+            log.textContent;
+
+        // Bar chart
+        const ctx1 = document.getElementById('housingBarChart').getContext('2d');
+        if (housingBarChart) housingBarChart.destroy();
+        housingBarChart = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: ['Available', 'Occupied', 'Waiting'],
+                datasets: [{
+                    label: 'Housing Status',
+                    data: [available, occupied, waiting],
+                    backgroundColor: [
+                        'rgba(52, 211, 153, 0.7)',
+                        'rgba(248, 113, 113, 0.7)',
+                        'rgba(251, 191, 36, 0.7)'
+                    ]
+                }]
+            },
+            options: {
+                plugins: { legend: { labels: { color: '#e5e7eb' } } },
+                scales: {
+                    x: { ticks: { color: '#9ca3af' } },
+                    y: { ticks: { color: '#9ca3af' } }
+                }
+            }
+        });
+
+        // Doughnut chart
+        const ctx2 = document.getElementById('housingDoughnutChart').getContext('2d');
+        if (housingDoughnutChart) housingDoughnutChart.destroy();
+        housingDoughnutChart = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['Success', 'Failure'],
+                datasets: [{
+                    data: [successRate, 100 - successRate],
+                    backgroundColor: [
+                        'rgba(56, 189, 248, 0.7)',
+                        'rgba(148, 163, 184, 0.3)'
+                    ]
+                }]
+            },
+            options: {
+                plugins: { legend: { labels: { color: '#e5e7eb' } } }
+            }
+        });
+    }
+
     // INIT
 
     window.addEventListener('load', () => {
@@ -837,81 +914,3 @@
 
 </body>
 </html>
-
-// HOUSING DASHBOARD
-
-let housingBarChart = null;
-let housingDoughnutChart = null;
-
-function setHousingTab(sectionId, ev) {
-    document.querySelectorAll('#tab-housing .tab-section').forEach(s => s.classList.remove('active'));
-    document.getElementById(sectionId).classList.add('active');
-
-    document.querySelectorAll('#tab-housing .tab-btn').forEach(b => b.classList.remove('active'));
-    if (ev) ev.currentTarget.classList.add('active');
-}
-
-function refreshHousingDashboard() {
-    // Simulated data
-    const available = 10 + Math.floor(Math.random() * 5);
-    const occupied = 8 + Math.floor(Math.random() * 4);
-    const waiting = 2 + Math.floor(Math.random() * 3);
-    const successRate = 60 + Math.floor(Math.random() * 30);
-
-    // Update actions log
-    const log = document.getElementById('housingActionsLog');
-    const timestamp = new Date().toLocaleTimeString();
-    log.textContent =
-        `[${timestamp}] Dashboard refreshed\n` +
-        `Available: ${available}\n` +
-        `Occupied: ${occupied}\n` +
-        `Waiting: ${waiting}\n` +
-        `Success Rate: ${successRate}%\n\n` +
-        log.textContent;
-
-    // Bar chart
-    const ctx1 = document.getElementById('housingBarChart').getContext('2d');
-    if (housingBarChart) housingBarChart.destroy();
-    housingBarChart = new Chart(ctx1, {
-        type: 'bar',
-        data: {
-            labels: ['Available', 'Occupied', 'Waiting'],
-            datasets: [{
-                label: 'Housing Status',
-                data: [available, occupied, waiting],
-                backgroundColor: [
-                    'rgba(52, 211, 153, 0.7)',
-                    'rgba(248, 113, 113, 0.7)',
-                    'rgba(251, 191, 36, 0.7)'
-                ]
-            }]
-        },
-        options: {
-            plugins: { legend: { labels: { color: '#e5e7eb' } } },
-            scales: {
-                x: { ticks: { color: '#9ca3af' } },
-                y: { ticks: { color: '#9ca3af' } }
-            }
-        }
-    });
-
-    // Doughnut chart
-    const ctx2 = document.getElementById('housingDoughnutChart').getContext('2d');
-    if (housingDoughnutChart) housingDoughnutChart.destroy();
-    housingDoughnutChart = new Chart(ctx2, {
-        type: 'doughnut',
-        data: {
-            labels: ['Success', 'Failure'],
-            datasets: [{
-                data: [successRate, 100 - successRate],
-                backgroundColor: [
-                    'rgba(56, 189, 248, 0.7)',
-                    'rgba(148, 163, 184, 0.3)'
-                ]
-            }]
-        },
-        options: {
-            plugins: { legend: { labels: { color: '#e5e7eb' } } }
-        }
-    });
-}
