@@ -837,3 +837,81 @@
 
 </body>
 </html>
+
+// HOUSING DASHBOARD
+
+let housingBarChart = null;
+let housingDoughnutChart = null;
+
+function setHousingTab(sectionId, ev) {
+    document.querySelectorAll('#tab-housing .tab-section').forEach(s => s.classList.remove('active'));
+    document.getElementById(sectionId).classList.add('active');
+
+    document.querySelectorAll('#tab-housing .tab-btn').forEach(b => b.classList.remove('active'));
+    if (ev) ev.currentTarget.classList.add('active');
+}
+
+function refreshHousingDashboard() {
+    // Simulated data
+    const available = 10 + Math.floor(Math.random() * 5);
+    const occupied = 8 + Math.floor(Math.random() * 4);
+    const waiting = 2 + Math.floor(Math.random() * 3);
+    const successRate = 60 + Math.floor(Math.random() * 30);
+
+    // Update actions log
+    const log = document.getElementById('housingActionsLog');
+    const timestamp = new Date().toLocaleTimeString();
+    log.textContent =
+        `[${timestamp}] Dashboard refreshed\n` +
+        `Available: ${available}\n` +
+        `Occupied: ${occupied}\n` +
+        `Waiting: ${waiting}\n` +
+        `Success Rate: ${successRate}%\n\n` +
+        log.textContent;
+
+    // Bar chart
+    const ctx1 = document.getElementById('housingBarChart').getContext('2d');
+    if (housingBarChart) housingBarChart.destroy();
+    housingBarChart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: ['Available', 'Occupied', 'Waiting'],
+            datasets: [{
+                label: 'Housing Status',
+                data: [available, occupied, waiting],
+                backgroundColor: [
+                    'rgba(52, 211, 153, 0.7)',
+                    'rgba(248, 113, 113, 0.7)',
+                    'rgba(251, 191, 36, 0.7)'
+                ]
+            }]
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#e5e7eb' } } },
+            scales: {
+                x: { ticks: { color: '#9ca3af' } },
+                y: { ticks: { color: '#9ca3af' } }
+            }
+        }
+    });
+
+    // Doughnut chart
+    const ctx2 = document.getElementById('housingDoughnutChart').getContext('2d');
+    if (housingDoughnutChart) housingDoughnutChart.destroy();
+    housingDoughnutChart = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: ['Success', 'Failure'],
+            datasets: [{
+                data: [successRate, 100 - successRate],
+                backgroundColor: [
+                    'rgba(56, 189, 248, 0.7)',
+                    'rgba(148, 163, 184, 0.3)'
+                ]
+            }]
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#e5e7eb' } } }
+        }
+    });
+}
