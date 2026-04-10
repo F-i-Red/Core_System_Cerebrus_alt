@@ -1,216 +1,231 @@
-# modules/education.py
+"""
+Education Module
+----------------
 
-from dataclasses import dataclass
-from typing import List, Dict, Optional, Literal
+This module defines the educational and institutional structures used by
+the Cerebrus Engine. It provides:
 
-InstitutionType = Literal["escola", "universidade", "centro_formacao"]
-ProposalStatus = Literal["aberta", "fechada"]
+- Weighted voting based on specialization and institutional role
+- Curriculum paths for training and rehabilitation
+- Training projects assigned to individuals
+- Integration with restorative justice processes
 
-# --------------------------
-# Estruturas base
-# --------------------------
+The philosophy:
+People with relevant expertise have proportionally more influence on
+decisions in their domain, while still preserving democratic balance.
+"""
+
+from dataclasses import dataclass, field
+from typing import List, Dict, Any, Optional
+
+
+# ---------------------------------------------------------
+# Data Models
+# ---------------------------------------------------------
 
 @dataclass
 class Institution:
+    """Represents an institution in the community (e.g., school, clinic, lab)."""
     id: str
     name: str
-    type: InstitutionType
-    location: str
-    members: List[str]  # lista de person_id
+    domain: str  # e.g., "education", "health", "engineering", "justice"
 
 
 @dataclass
 class Specialization:
-    person_id: str
-    tags: List[str]  # ex: ["saude", "educacao", "engenharia"]
+    """Represents a person's area of expertise."""
+    id: str
+    name: str
+    domain: str  # e.g., "ecology", "mobility", "logistics", "justice"
 
 
 @dataclass
 class CurriculumPath:
+    """
+    Represents a structured learning path.
+
+    Tags allow matching with:
+    - rehabilitation needs
+    - institutional roles
+    - community development goals
+    """
     id: str
     name: str
-    required_tags: List[str]  # ex: ["engenharia", "robotica"]
-    duration_months: int
-    grants_civic_force_access: bool = False  # formação obrigatória para certas tarefas
+    tags: List[str]
+    modules: List[str]
 
 
 @dataclass
 class TrainingProject:
+    """Represents a training project assigned to a person."""
     id: str
-    title: str
-    description: str
-    institution_id: str
-    curriculum_path_id: Optional[str] = None
-    participants: List[str] = None
-
-    def __post_init__(self):
-        if self.participants is None:
-            self.participants = []
-
-
-@dataclass
-class Proposal:
-    id: str
-    title: str
-    description: str
-    context: str          # ex: "saude", "educacao", "mobilidade"
-    status: ProposalStatus = "aberta"
+    curriculum_id: str
+    participants: List[str] = field(default_factory=list)
+    completed: bool = False
 
 
 @dataclass
 class Vote:
-    proposal_id: str
-    person_id: str
-    choice: bool          # True = a favor, False = contra
+    """Represents a single vote in a community decision."""
+    voter_id: str
+    choice: str  # "for" or "against"
+    specialization: Optional[Specialization] = None
+    institution: Optional[Institution] = None
 
 
 @dataclass
-class TallyResult:
-    proposal_id: str
-    total_weight_for: float
-    total_weight_against: float
+class VoteResult:
+    """Represents the final result of a weighted vote."""
     approved: bool
+    total_for: float
+    total_against: float
     reason: str
 
 
-# --------------------------
-# Peso de voto
-# --------------------------
+# ---------------------------------------------------------
+# Education Module
+# ---------------------------------------------------------
 
-def get_vote_weight(
-    person_id: str,
-    specializations: Dict[str, Specialization],
-    institutions: Dict[str, Institution],
-    proposal: Proposal
-) -> float:
-
-    weight = 1.0
-
-    # especialização no tema → +1
-    spec = specializations.get(person_id)
-    if spec and proposal.context in spec.tags:
-        weight += 1.0
-
-    # se for educação → escolas têm voto reforçado
-    if proposal.context == "educacao":
-        for inst in institutions.values():
-            if inst.type == "escola" and person_id in inst.members:
-                weight += 1.0
-                break
-
-    # se for saúde → profissionais de saúde têm peso
-    if proposal.context == "saude":
-        if spec and "saude" in spec.tags:
-            weight += 1.0
-
-    # se for mobilidade → técnicos e Força Cívica têm peso
-    if proposal.context == "mobilidade":
-        if spec and ("engenharia" in spec.tags or "logistica" in spec.tags):
-            weight += 1.0
-
-    return weight
-
-
-# --------------------------
-# Contagem de votos
-# --------------------------
-
-def tally_votes(
-    proposal: Proposal,
-    votes: List[Vote],
-    specializations: Dict[str, Specialization],
-    institutions: Dict[str, Institution]
-) -> TallyResult:
-
-    total_for = 0.0
-    total_against = 0.0
-
-    for v in votes:
-        if v.proposal_id != proposal.id:
-            continue
-
-        w = get_vote_weight(v.person_id, specializations, institutions, proposal)
-
-        if v.choice:
-            total_for += w
-        else:
-            total_against += w
-
-    if total_for == 0 and total_against == 0:
-        return TallyResult(
-            proposal_id=proposal.id,
-            total_weight_for=0.0,
-            total_weight_against=0.0,
-            approved=False,
-            reason="Sem votos registados"
-        )
-
-    if total_for >= 1.2 * total_against:
-        proposal.status = "fechada"
-        return TallyResult(
-            proposal_id=proposal.id,
-            total_weight_for=total_for,
-            total_weight_against=total_against,
-            approved=True,
-            reason="Aprovado por maioria ponderada"
-        )
-
-    proposal.status = "fechada"
-    return TallyResult(
-        proposal_id=proposal.id,
-        total_weight_for=total_for,
-        total_weight_against=total_against,
-        approved=False,
-        reason="Rejeitado ou sem maioria suficiente"
-    )
-
-
-# --------------------------
-# Formação e Currículos
-# --------------------------
-
-def enroll_in_curriculum(
-    person_id: str,
-    curriculum: CurriculumPath,
-    specializations: Dict[str, Specialization]
-) -> bool:
+class EducationModule:
     """
-    Verifica se a pessoa tem as bases necessárias para entrar no currículo.
-    Retorna True se puder entrar, False caso contrário.
+    Core education module.
+
+    Handles:
+    - Weighted voting
+    - Curriculum enrollment
+    - Rehabilitation training assignment
     """
-    spec = specializations.get(person_id)
-    if not spec:
-        return False
 
-    # precisa de pelo menos uma tag base
-    if not any(tag in spec.tags for tag in curriculum.required_tags):
-        return False
-
-    return True
-
-
-# ligação com Justiça
-
-def assign_rehabilitation_training(
-    aggressor_id,
-    curriculum_paths,
-    training_projects
-):
-    """
-    Atribui automaticamente um projeto de formação
-    como parte da reparação/restauração.
-    """
-    for path in curriculum_paths.values():
-        if "restaurativa" in path.required_tags:
-            project = TrainingProject(
-                id=f"rehab_{aggressor_id}",
-                title="Formação Restaurativa Obrigatória",
-                description="Processo de reintegração e autocontrolo.",
-                institution_id="centro_formacao_geral",
-                curriculum_path_id=path.id
+    def __init__(self):
+        # Demo curriculum paths
+        self.curricula: List[CurriculumPath] = [
+            CurriculumPath(
+                id="CUR-001",
+                name="Restorative Practices",
+                tags=["restorative", "justice"],
+                modules=["mediation", "conflict_resolution", "community_dialogue"]
+            ),
+            CurriculumPath(
+                id="CUR-002",
+                name="Ecology Stewardship",
+                tags=["ecology", "sustainability"],
+                modules=["resource_management", "soil_health", "water_cycles"]
             )
-            project.participants.append(aggressor_id)
-            training_projects[project.id] = project
-            return project
+        ]
 
-    return None
+        self.training_projects: List[TrainingProject] = []
+
+    # -----------------------------------------------------
+    # Weighted Voting
+    # -----------------------------------------------------
+
+    def get_vote_weight(
+        self,
+        specialization: Optional[Specialization],
+        institution: Optional[Institution],
+        proposal_domain: str
+    ) -> float:
+        """
+        Computes the weight of a vote.
+
+        Rules:
+        - Base weight = 1.0
+        - +0.5 if specialization matches proposal domain
+        - +0.3 if institution domain matches proposal domain
+        """
+
+        weight = 1.0
+
+        if specialization and specialization.domain == proposal_domain:
+            weight += 0.5
+
+        if institution and institution.domain == proposal_domain:
+            weight += 0.3
+
+        return weight
+
+    def tally_votes(self, votes: List[Vote], proposal_domain: str) -> VoteResult:
+        """
+        Tallies weighted votes and determines approval.
+
+        Approval rule:
+        - Proposal passes if total_for >= 1.2 * total_against
+        """
+
+        total_for = 0.0
+        total_against = 0.0
+
+        for vote in votes:
+            weight = self.get_vote_weight(
+                vote.specialization,
+                vote.institution,
+                proposal_domain
+            )
+
+            if vote.choice == "for":
+                total_for += weight
+            else:
+                total_against += weight
+
+        approved = total_for >= 1.2 * total_against
+
+        reason = (
+            "Approved by weighted majority."
+            if approved else
+            "Rejected due to insufficient weighted support."
+        )
+
+        return VoteResult(
+            approved=approved,
+            total_for=total_for,
+            total_against=total_against,
+            reason=reason
+        )
+
+    # -----------------------------------------------------
+    # Curriculum Enrollment
+    # -----------------------------------------------------
+
+    def enroll_in_curriculum(self, person_tags: List[str]) -> Optional[CurriculumPath]:
+        """
+        Enrolls a person in a curriculum based on matching tags.
+
+        Example:
+        - A person with ["restorative", "community"] will match the
+          "Restorative Practices" curriculum.
+        """
+
+        for curriculum in self.curricula:
+            if any(tag in person_tags for tag in curriculum.tags):
+                return curriculum
+
+        return None
+
+    # -----------------------------------------------------
+    # Rehabilitation Training
+    # -----------------------------------------------------
+
+    def assign_rehabilitation_training(self, person_id: str) -> Optional[TrainingProject]:
+        """
+        Assigns a rehabilitation training project to a person.
+
+        Matches curricula with tag "restorative".
+        """
+
+        restorative_paths = [
+            c for c in self.curricula if "restorative" in c.tags
+        ]
+
+        if not restorative_paths:
+            return None
+
+        curriculum = restorative_paths[0]
+
+        project = TrainingProject(
+            id=f"TP-{len(self.training_projects) + 1}",
+            curriculum_id=curriculum.id,
+            participants=[person_id]
+        )
+
+        self.training_projects.append(project)
+        return project
