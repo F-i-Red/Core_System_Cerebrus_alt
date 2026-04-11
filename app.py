@@ -1,167 +1,219 @@
-from flask import Flask, jsonify, send_from_directory
+# app.py
+
+from flask import Flask, jsonify, request, render_template
 from core.engine import CerebrusEngine
-from main import setup_engine
 
 app = Flask(__name__)
-engine = setup_engine()
+
+# Single global engine instance
+engine = CerebrusEngine()
+
 
 # ---------------------------------------------------------
-# Serve the Web Interface
+# UI Root
 # ---------------------------------------------------------
 
-@app.get("/")
-def serve_index():
-    return send_from_directory("static", "index.html")
+@app.route("/")
+def index():
+    """
+    Main UI entrypoint.
+    Assumes you have a templates/index.html file.
+    """
+    return render_template("index.html")
 
 
 # ---------------------------------------------------------
 # Housing
 # ---------------------------------------------------------
 
-@app.get("/request_house")
-def request_house():
+@app.route("/housing/request", methods=["POST"])
+def housing_request():
     """
-    Assign a house to a family (demo request).
+    Demo: assign demo house to demo family.
     """
-    result = engine.request_house("casa1", "fam1", "FIXED")
-    return jsonify(result.__dict__)
+    result = engine.request_house()
+
+    return jsonify({
+        "success": result.success,
+        "house_id": result.house_id,
+        "family_id": result.family_id,
+        "message": result.message,
+        "details": result.details
+    })
 
 
 # ---------------------------------------------------------
 # Mobility
 # ---------------------------------------------------------
 
-@app.get("/request_transport")
-def request_transport():
+@app.route("/mobility/request", methods=["POST"])
+def mobility_request():
     """
-    Request a transport vehicle for a person.
+    Demo: assign a vehicle to a demo transport request.
     """
-    result = engine.request_mobility("p1", "blockA", "center")
-    return jsonify(result.__dict__)
+    result = engine.request_transport()
+
+    return jsonify({
+        "success": result.success,
+        "vehicle_id": result.vehicle_id,
+        "request_id": result.request_id,
+        "message": result.message,
+        "details": result.details
+    })
 
 
 # ---------------------------------------------------------
-# Logistics (Residue / Delivery)
+# Logistics
 # ---------------------------------------------------------
 
-@app.get("/send_residue")
-def send_residue():
+@app.route("/logistics/residue", methods=["POST"])
+def logistics_residue():
     """
-    Send a residue request (may trigger an incident).
+    Process a residue request.
+    Body JSON:
+        { "content": "text describing residue" }
     """
-    result = engine.submit_logistics_request(
-        req_id="req_web",
-        person_id="p1",
-        req_type="residue",
-        content="blood and tissue",
-        location="blockA"
-    )
-    return jsonify(result.__dict__)
+    data = request.get_json(silent=True) or {}
+    content = data.get("content", "mixed residue")
+
+    scan = engine.send_residue(content=content)
+
+    return jsonify({
+        "fraction": scan.fraction,
+        "purity": scan.purity,
+        "destination": scan.destination,
+        "alert": scan.alert
+    })
 
 
 # ---------------------------------------------------------
 # Justice
 # ---------------------------------------------------------
 
-@app.get("/process_incident")
-def process_incident():
+@app.route("/justice/process/<incident_id>", methods=["POST"])
+def justice_process(incident_id):
     """
-    Process an existing incident created by residue anomaly.
+    Process an incident through the justice pipeline.
     """
-    incident_id = "incident_req_web"
-    actions = engine.process_incident(incident_id)
-    return jsonify([a.__dict__ for a in actions])
+    result = engine.process_incident(incident_id=incident_id)
+
+    # If error, return as-is
+    if isinstance(result, dict) and "error" in result:
+        return jsonify(result), 404
+
+    return jsonify({
+        "incident_id": result.incident_id,
+        "risk_level": result.risk_level,
+        "victim_protection": result.victim_protection,
+        "aggressor_restrictions": result.aggressor_restrictions,
+        "restorative_process": result.restorative_process,
+        "containment": result.containment
+    })
 
 
 # ---------------------------------------------------------
 # Civic Force
 # ---------------------------------------------------------
 
-@app.get("/civic_intervention")
+@app.route("/civic/intervention", methods=["POST"])
 def civic_intervention():
     """
-    Trigger a Civic Force intervention for the incident.
+    Create an urgent civic force intervention.
+    Body JSON (optional):
+        { "description": "...", "location": "Block A" }
     """
-    incident_id = "incident_req_web"
-    msg = engine.dispatch_civic_force(incident_id)
-    return jsonify({"message": msg})
+    data = request.get_json(silent=True) or {}
+    description = data.get("description", "urgent situation")
+    location = data.get("location", "Block A")
+
+    result = engine.civic_intervention(description=description, location=location)
+
+    return jsonify({
+        "task_id": result["task"].id,
+        "assignment_results": result["assignment_results"]
+    })
 
 
 # ---------------------------------------------------------
 # Ecology
 # ---------------------------------------------------------
 
-@app.get("/update_ecology")
-def update_ecology():
+@app.route("/ecology/update", methods=["POST"])
+def ecology_update():
     """
-    Update ecological data for block A and refresh the public panel.
+    Demo: update ecology flows and return panel data.
     """
-    from modules.ecology import EcoBlock, ResourceFlow, update_flow, ecology_to_panel
-
-    block = EcoBlock(
-        id="blockA",
-        name="Block A",
-        flows={
-            "water": ResourceFlow("water"),
-            "energy": ResourceFlow("energy"),
-            "waste": ResourceFlow("waste"),
-            "co2": ResourceFlow("co2")
-        }
-    )
-
-    update_flow(block, "water", consumed=20, regenerated=10)
-    update_flow(block, "energy", consumed=15, regenerated=30)
-    update_flow(block, "waste", consumed=5, regenerated=5)
-    update_flow(block, "co2", consumed=0, regenerated=0)
-
-    panel_data = ecology_to_panel(block)
-    engine.update_panel("blockA", panel_data)
-
-    return jsonify(panel_data)
+    panel = engine.update_ecology()
+    return jsonify(panel)
 
 
 # ---------------------------------------------------------
-# Education (Voting)
+# Sustainability
 # ---------------------------------------------------------
 
-@app.get("/vote")
-def vote():
+@app.route("/sustainability/panel", methods=["GET"])
+def sustainability_panel():
     """
-    Perform a weighted vote on a proposal.
+    Returns sustainability indicators, score, and alerts.
     """
-    from modules.education import Proposal, Vote
+    result = engine.sustainability_panel()
+    return jsonify(result)
 
-    proposal = Proposal(
-        id="prop_web",
-        title="Vertical Garden",
-        description="Create a vertical garden in Block A",
-        context="education"
-    )
 
-    votes = [
-        Vote("prop_web", "p1", True),
-        Vote("prop_web", "p2", False)
-    ]
+@app.route("/sustainability/actions", methods=["GET"])
+def sustainability_actions():
+    """
+    Returns recommended actions for all sustainability alerts.
+    """
+    result = engine.sustainability_actions()
+    return jsonify(result)
 
-    result = engine.tally_proposal_votes(proposal, votes)
-    return jsonify(result.__dict__)
+
+@app.route("/sustainability/create_tasks", methods=["POST"])
+def sustainability_create_tasks():
+    """
+    Converts sustainability alerts into Civic Force tasks.
+    """
+    result = engine.sustainability_to_civic_tasks()
+    return jsonify(result)
+
+
+@app.route("/sustainability/update/<indicator>/<value>", methods=["POST"])
+def sustainability_update_indicator(indicator, value):
+    """
+    Updates a sustainability indicator manually.
+    Example:
+        POST /sustainability/update/renewable_energy_ratio/0.75
+    """
+    try:
+        value_f = float(value)
+    except ValueError:
+        return jsonify({"error": "Value must be a float between 0 and 1"}), 400
+
+    engine.sustainability.update_indicator(indicator, value_f)
+
+    return jsonify({
+        "status": "updated",
+        "indicator": indicator,
+        "value": value_f
+    })
 
 
 # ---------------------------------------------------------
-# Public Logs
+# Logs
 # ---------------------------------------------------------
 
-@app.get("/logs")
+@app.route("/logs", methods=["GET"])
 def logs():
     """
-    Return all public ledger logs.
+    Returns all public ledger entries.
     """
-    logs = engine.ledger.get_public_logs()
-    return jsonify([l.__dict__ for l in logs])
+    entries = engine.get_logs()
+    return jsonify(entries)
 
 
 # ---------------------------------------------------------
-# Run Server
+# Main
 # ---------------------------------------------------------
 
 if __name__ == "__main__":
