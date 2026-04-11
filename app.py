@@ -97,7 +97,6 @@ def justice_process(incident_id):
     """
     result = engine.process_incident(incident_id=incident_id)
 
-    # If error, return as-is
     if isinstance(result, dict) and "error" in result:
         return jsonify(result), 404
 
