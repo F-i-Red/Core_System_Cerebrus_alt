@@ -63,8 +63,9 @@ pip install flask
 No other external libraries are required.
 
 ## 📁 Project Structure
+
 ### Código
-Core_System_Cerebrus/
+📁 Core_System_Cerebrus/
 
 │
 
@@ -98,11 +99,11 @@ Core_System_Cerebrus/
 
 │
 
-├── static/ (for: CSS, JS, images, assets)
+├── 📁 static/ (for: CSS, JS, images, assets)
 
 │
 
-├── templates
+├── 📁 templates
 
 │   └── 🖥️ index.html
 
