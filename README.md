@@ -98,7 +98,11 @@ Core_System_Cerebrus/
 
 │
 
-├── static/
+├── static/ (for: CSS, JS, images, assets)
+
+│
+
+├── templates
 
 │   └── 🖥️ index.html
 
