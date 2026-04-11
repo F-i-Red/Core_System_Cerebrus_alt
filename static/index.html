@@ -1,976 +1,243 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Cerebrus OS — Control Panel</title>
-
-    <!-- Chart.js for dashboards -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    <title>Cerebrus OS Dashboard</title>
     <style>
-        :root {
-            --bg-main: #020617;
-            --bg-panel: #020617;
-            --bg-panel-alt: #020617;
-            --accent: #38bdf8;
-            --accent-soft: rgba(56, 189, 248, 0.15);
-            --text-main: #e5e7eb;
-            --text-muted: #9ca3af;
-            --border-soft: #1f2937;
-        }
-
-        body.light {
-            --bg-main: #f3f4f6;
-            --bg-panel: #ffffff;
-            --bg-panel-alt: #e5e7eb;
-            --accent: #2563eb;
-            --accent-soft: rgba(37, 99, 235, 0.12);
-            --text-main: #111827;
-            --text-muted: #6b7280;
-            --border-soft: #d1d5db;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
         body {
-            margin: 0;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%);
-            color: var(--text-main);
+            font-family: Arial, sans-serif;
             display: flex;
-            height: 100vh;
-            overflow: hidden;
+            margin: 0;
         }
 
-        /* Sidebar */
+        #sidebar {
+            width: 220px;
+            background: #222;
+            color: white;
+            padding: 20px;
+            height: 100vh;
+        }
 
-        .sidebar {
-            width: 260px;
-            background: linear-gradient(180deg, #020617 0%, #020617 100%);
-            border-right: 1px solid var(--border-soft);
-            display: flex;
-            flex-direction: column;
+        #sidebar button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #444;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #sidebar button:hover {
+            background: #666;
+        }
+
+        #content {
+            flex-grow: 1;
             padding: 20px;
         }
 
-        .logo {
-            font-size: 20px;
-            font-weight: 600;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-        }
-
-        .logo-sub {
-            font-size: 11px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.18em;
-        }
-
-        .nav-section-title {
-            margin-top: 24px;
-            margin-bottom: 8px;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.16em;
-            color: var(--text-muted);
-        }
-
-        .nav-item {
-            padding: 10px 12px;
-            margin-bottom: 4px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-muted);
-        }
-
-        .nav-item span.icon {
-            font-size: 16px;
-        }
-
-        .nav-item:hover {
-            background: rgba(148, 163, 184, 0.08);
-            color: var(--text-main);
-        }
-
-        .nav-item.active {
-            background: var(--accent-soft);
-            color: var(--accent);
-        }
-
-        .sidebar-footer {
-            margin-top: auto;
-            font-size: 11px;
-            color: var(--text-muted);
-            border-top: 1px solid var(--border-soft);
-            padding-top: 10px;
-        }
-
-        .toggle-theme {
-            margin-top: 8px;
-            padding: 6px 10px;
-            border-radius: 999px;
-            border: 1px solid var(--border-soft);
-            background: transparent;
-            color: var(--text-muted);
-            font-size: 11px;
-            cursor: pointer;
-        }
-
-        .toggle-theme:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        /* Main layout */
-
-        .main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 16px 20px;
-            overflow: hidden;
-        }
-
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .top-title {
-            font-size: 18px;
-            font-weight: 500;
-        }
-
-        .top-subtitle {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        .pill {
-            padding: 4px 10px;
-            border-radius: 999px;
-            border: 1px solid var(--border-soft);
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-
-        .layout {
-            display: grid;
-            grid-template-columns: 2.2fr 1.3fr;
-            grid-template-rows: 1.4fr 1.2fr;
-            gap: 12px;
-            height: calc(100vh - 70px);
-        }
-
-        .panel {
-            background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.9));
-            border-radius: 10px;
-            border: 1px solid var(--border-soft);
-            padding: 12px 14px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 8px;
-        }
-
-        .panel-title {
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.16em;
-            color: var(--text-muted);
-        }
-
-        .panel-subtitle {
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-
-        .panel-body {
-            flex: 1;
-            overflow: auto;
-            font-size: 13px;
-        }
-
-        /* Buttons */
-
-        button.action {
-            padding: 7px 12px;
-            margin: 4px 4px 4px 0;
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 999px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        button.action:hover {
-            filter: brightness(1.1);
-        }
-
-        /* Output */
-
-        #output {
-            font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            font-size: 11px;
-            white-space: pre-wrap;
-        }
-
-        /* Map / Grid */
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-        }
-
-        .grid-cell {
-            border-radius: 6px;
-            padding: 8px;
-            border: 1px solid var(--border-soft);
-            background: radial-gradient(circle at top, rgba(56, 189, 248, 0.08), rgba(15, 23, 42, 0.9));
-            font-size: 11px;
-        }
-
-        .grid-cell-title {
-            font-size: 11px;
-            margin-bottom: 4px;
-            color: var(--accent);
-        }
-
-        .grid-cell-metric {
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-
-        /* Logs */
-
-        .logs-container {
-            font-family: "JetBrains Mono", ui-monospace;
-            font-size: 11px;
-            line-height: 1.4;
-            white-space: pre-wrap;
-        }
-
-        .log-line {
-            margin-bottom: 2px;
-        }
-
-        .log-module {
-            color: var(--accent);
-        }
-
-        .log-action {
-            color: #a855f7;
-        }
-
-        .log-details {
-            color: var(--text-muted);
-        }
-
-        /* Tabs inside main panel */
-
-        .tab-buttons {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 6px;
-        }
-
-        .tab-btn {
-            padding: 4px 10px;
-            border-radius: 999px;
-            border: 1px solid var(--border-soft);
-            background: transparent;
-            font-size: 11px;
-            color: var(--text-muted);
-            cursor: pointer;
-        }
-
-        .tab-btn.active {
-            border-color: var(--accent);
-            color: var(--accent);
-            background: var(--accent-soft);
-        }
-
-        .tab-section {
+        section {
             display: none;
         }
 
-        .tab-section.active {
-            display: block;
+        pre {
+            background: #f3f3f3;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap;
         }
     </style>
 </head>
+<body>
 
-<body class="dark">
+<div id="sidebar">
+    <h2>Cerebrus OS</h2>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-    <div>
-        <div class="logo">Cerebrus OS</div>
-        <div class="logo-sub">CIVILIZATION ENGINE · 2063</div>
+    <button onclick="showSection('housing')">Housing</button>
+    <button onclick="showSection('mobility')">Mobility</button>
+    <button onclick="showSection('logistics')">Logistics</button>
+    <button onclick="showSection('justice')">Justice</button>
+    <button onclick="showSection('civic')">Civic Force</button>
+    <button onclick="showSection('ecology')">Ecology</button>
 
-        <div class="nav-section-title">Modules</div>
+    <!-- NEW BUTTON -->
+    <button onclick="showSection('sustainability')">Sustainability</button>
 
-        <div class="nav-item active" onclick="setMainTab('overview', event)">
-            <span class="icon">🧭</span> Overview
-        </div>
-        <div class="nav-item" onclick="setMainTab('housing', event)">
-            <span class="icon">🏠</span> Housing
-        </div>
-        <div class="nav-item" onclick="setMainTab('mobility', event)">
-            <span class="icon">🚗</span> Mobility
-        </div>
-        <div class="nav-item" onclick="setMainTab('logistics', event)">
-            <span class="icon">📦</span> Logistics
-        </div>
-        <div class="nav-item" onclick="setMainTab('justice', event)">
-            <span class="icon">⚖️</span> Justice & Civic Force
-        </div>
-        <div class="nav-item" onclick="setMainTab('ecology', event)">
-            <span class="icon">🌱</span> Ecology
-        </div>
-        <div class="nav-item" onclick="setMainTab('voting', event)">
-            <span class="icon">🗳️</span> Voting
-        </div>
-        <div class="nav-item" onclick="setMainTab('logs', event)">
-            <span class="icon">📡</span> Public Logs
-        </div>
-    </div>
-
-    <div class="sidebar-footer">
-        <div>Mode: <span id="mode-label">Dark</span></div>
-        <button class="toggle-theme" onclick="toggleTheme()">Toggle Dark / Light</button>
-    </div>
+    <button onclick="showSection('logs')">Logs</button>
 </div>
 
-<!-- MAIN -->
-<div class="main">
-    <div class="top-bar">
-        <div>
-            <div class="top-title" id="top-title">Overview</div>
-            <div class="top-subtitle">Cerebrus Engine · Live neighborhood simulation</div>
-        </div>
-        <div class="pill">Prototype · Localhost · Flask API</div>
-    </div>
+<div id="content">
 
-    <div class="layout">
+    <!-- HOUSING -->
+    <section id="housing">
+        <h2>Housing</h2>
+        <button onclick="requestHousing()">Request Housing</button>
+        <pre id="housing-result">–</pre>
+    </section>
 
-        <!-- LEFT TOP: MAIN CONTENT (changes with main tab) -->
-        <div class="panel">
-            <div class="panel-header">
-                <div>
-                    <div class="panel-title" id="main-panel-title">SYSTEM OVERVIEW</div>
-                    <div class="panel-subtitle" id="main-panel-subtitle">High-level controls and actions</div>
-                </div>
-            </div>
-            <div class="panel-body" id="main-panel-body">
+    <!-- MOBILITY -->
+    <section id="mobility">
+        <h2>Mobility</h2>
+        <button onclick="requestMobility()">Request Transport</button>
+        <pre id="mobility-result">–</pre>
+    </section>
 
-                <!-- OVERVIEW TAB -->
-                <div class="main-tab" id="tab-overview">
-                    <div class="tab-buttons">
-                        <button class="tab-btn active" onclick="setInnerTab('overview-actions', event)">Actions</button>
-                        <button class="tab-btn" onclick="setInnerTab('overview-ecology', event)">Ecology Snapshot</button>
-                        <button class="tab-btn" onclick="setInnerTab('overview-map', event)">Neighborhood Map</button>
-                    </div>
+    <!-- LOGISTICS -->
+    <section id="logistics">
+        <h2>Logistics</h2>
+        <button onclick="sendResidue()">Send Residue</button>
+        <pre id="logistics-result">–</pre>
+    </section>
 
-                    <div id="overview-actions" class="tab-section active">
-                        <p>Quick actions across modules:</p>
-                        <button class="action" onclick="callAPI('/request_house')">Request House</button>
-                        <button class="action" onclick="callAPI('/request_transport')">Request Transport</button>
-                        <button class="action" onclick="callAPI('/send_residue')">Send Residue</button>
-                        <button class="action" onclick="showSection('sustainability')">Sustainability</button>
-                        <button class="action" onclick="callAPI('/process_incident')">Process Incident</button>
-                        <button class="action" onclick="callAPI('/civic_intervention')">Civic Force Intervention</button>
-                        <button class="action" onclick="updateEcologyAndChart()">Update Ecology</button>
-                        <button class="action" onclick="callAPI('/vote')">Run Vote</button>
-                        <button class="action" onclick="loadLogs()">Load Logs</button>
-                    </div>
+    <!-- JUSTICE -->
+    <section id="justice">
+        <h2>Justice</h2>
+        <input id="incident-id" placeholder="Incident ID" />
+        <button onclick="processIncident()">Process Incident</button>
+        <pre id="justice-result">–</pre>
+    </section>
 
-                    <div id="overview-ecology" class="tab-section">
-                        <p>Ecology snapshot for Block A:</p>
-                        <canvas id="overviewEcologyChart" height="140"></canvas>
-                    </div>
+    <!-- CIVIC FORCE -->
+    <section id="civic">
+        <h2>Civic Force</h2>
+        <button onclick="civicIntervention()">Trigger Intervention</button>
+        <pre id="civic-result">–</pre>
+    </section>
 
-                    <div id="overview-map" class="tab-section">
-                        <p>Neighborhood grid (conceptual):</p>
-                        <div class="grid" id="neighborhood-grid">
-                            <!-- Filled by JS -->
-                        </div>
-                    </div>
-                </div>
+    <!-- ECOLOGY -->
+    <section id="ecology">
+        <h2>Ecology</h2>
+        <button onclick="updateEcology()">Update Ecology</button>
+        <pre id="ecology-result">–</pre>
+    </section>
 
-                <!-- HOUSING TAB -->
-                <div class="main-tab" id="tab-housing" style="display:none;">
-                    <div class="tab-buttons">
-                        <button class="tab-btn active" onclick="setHousingTab('housing-dashboard', event)">Dashboard</button>
-                        <button class="tab-btn" onclick="setHousingTab('housing-actions', event)">Actions</button>
-                    </div>
+    <!-- SUSTAINABILITY (NEW) -->
+    <section id="sustainability" style="padding:20px;">
+        <h2>Sustainability Dashboard</h2>
 
-                    <!-- DASHBOARD -->
-                    <div id="housing-dashboard" class="tab-section active">
-                        <p>Housing allocation metrics and system overview.</p>
-
-                        <button class="action" onclick="refreshHousingDashboard()">Refresh Housing Dashboard</button>
-
-                        <div style="margin-top:10px;">
-                            <canvas id="housingBarChart" height="120"></canvas>
-                        </div>
-
-                        <div style="margin-top:20px; display:flex; gap:20px;">
-                            <div style="flex:1;">
-                                <canvas id="housingDoughnutChart" height="140"></canvas>
-                            </div>
-                            <div style="flex:1; font-size:12px;">
-                                <h4 style="margin-bottom:6px; color:var(--accent);">Recent Housing Actions</h4>
-                                <div id="housingActionsLog" style="white-space:pre-wrap; color:var(--text-muted);"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ACTIONS -->
-                    <div id="housing-actions" class="tab-section">
-                        <p>Manual housing actions.</p>
-                        <button class="action" onclick="callAPI('/request_house')">Request House</button>
-                        <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">
-                            This demo assigns a predefined house to a predefined family and logs the decision in the public ledger.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- MOBILITY TAB -->
-                <div class="main-tab" id="tab-mobility" style="display:none;">
-                    <p>Mobility requests and fleet usage.</p>
-                    <button class="action" onclick="callAPI('/request_transport')">Request Transport</button>
-                    <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">
-                        The engine assigns a vehicle based on availability and priority, then logs the decision.
-                    </p>
-                </div>
-
-                <!-- LOGISTICS TAB -->
-                <div class="main-tab" id="tab-logistics" style="display:none;">
-                    <p>Logistics and residue flows.</p>
-                    <button class="action" onclick="callAPI('/send_residue')">Send Residue (may trigger incident)</button>
-                    <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">
-                        If anomalous organic material is detected, a justice incident is created automatically.
-                    </p>
-                </div>
-
-                <!-- JUSTICE TAB -->
-                <div class="main-tab" id="tab-justice" style="display:none;">
-                    <p>Justice pipeline and Civic Force.</p>
-                    <button class="action" onclick="callAPI('/process_incident')">Process Incident</button>
-                    <button class="action" onclick="callAPI('/civic_intervention')">Civic Force Intervention</button>
-                    <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">
-                        Incidents are processed with restorative logic; the Civic Force is dispatched when needed.
-                    </p>
-                </div>
-
-<section id="sustainability" style="display:none; padding:20px;">
-    <h2>Sustainability Dashboard</h2>
-
-    <div>
-        <button onclick="loadSustainabilityPanel()">Load Panel</button>
-        <button onclick="loadSustainabilityActions()">Recommended Actions</button>
-        <button onclick="createSustainabilityTasks()">Create Civic Tasks</button>
-    </div>
-
-    <h3>Score</h3>
-    <pre id="sustainability-score">–</pre>
-
-    <h3>Indicators</h3>
-    <pre id="sustainability-indicators">–</pre>
-
-    <h3>Alerts</h3>
-    <pre id="sustainability-alerts">–</pre>
-
-    <h3>Recommended Actions</h3>
-    <pre id="sustainability-actions">–</pre>
-
-    <h3>Created Tasks</h3>
-    <pre id="sustainability-tasks">–</pre>
-</section>
-
-                <!-- ECOLOGY TAB -->
-                <div class="main-tab" id="tab-ecology" style="display:none;">
-                    <p>Ecology dashboard for Block A.</p>
-                    <button class="action" onclick="updateEcologyAndChart()">Update Ecology & Refresh Chart</button>
-                    <canvas id="ecologyChart" height="150" style="margin-top:10px;"></canvas>
-                </div>
-
-                <!-- VOTING TAB -->
-                <div class="main-tab" id="tab-voting" style="display:none;">
-                    <p>Weighted voting on proposals.</p>
-                    <button class="action" onclick="callAPI('/vote')">Run Vote</button>
-                    <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">
-                        Votes are weighted by specialization and institutional role, then logged in the public ledger.
-                    </p>
-                </div>
-
-                <!-- LOGS TAB -->
-                <div class="main-tab" id="tab-logs" style="display:none;">
-                    <p>Public ledger stream.</p>
-                    <button class="action" onclick="loadLogs()">Load Logs Once</button>
-                    <button class="action" onclick="toggleAutoLogs()">Toggle Auto‑Refresh</button>
-                    <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">
-                        All modules write to the public ledger. This view shows a human‑readable stream.
-                    </p>
-                </div>
-
-            </div>
+        <div style="margin-bottom: 10px;">
+            <button onclick="loadSustainabilityPanel()">Load Panel</button>
+            <button onclick="loadSustainabilityActions()">Recommended Actions</button>
+            <button onclick="createSustainabilityTasks()">Create Civic Tasks</button>
+            <button onclick="updateSustainabilityIndicator()">Update Indicator</button>
         </div>
 
-        <!-- RIGHT TOP: ECOLOGY / MOBILITY DASHBOARD -->
-        <div class="panel">
-            <div class="panel-header">
-                <div>
-                    <div class="panel-title">DASHBOARD</div>
-                    <div class="panel-subtitle">Ecology & Mobility</div>
-                </div>
-            </div>
-            <div class="panel-body">
-                <canvas id="overviewCombinedChart" height="140"></canvas>
-            </div>
-        </div>
+        <h3>Score</h3>
+        <pre id="sustainability-score">–</pre>
 
-        <!-- LEFT BOTTOM: RAW OUTPUT -->
-        <div class="panel">
-            <div class="panel-header">
-                <div>
-                    <div class="panel-title">RAW OUTPUT</div>
-                    <div class="panel-subtitle">Last API response (JSON)</div>
-                </div>
-            </div>
-            <div class="panel-body">
-                <div id="output">Results will appear here...</div>
-            </div>
-        </div>
+        <h3>Indicators</h3>
+        <pre id="sustainability-indicators">–</pre>
 
-        <!-- RIGHT BOTTOM: LOGS STREAM -->
-        <div class="panel">
-            <div class="panel-header">
-                <div>
-                    <div class="panel-title">PUBLIC LOGS</div>
-                    <div class="panel-subtitle">Ledger stream</div>
-                </div>
-            </div>
-            <div class="panel-body">
-                <div class="logs-container" id="logs-container">
-                    <!-- Logs will appear here -->
-                </div>
-            </div>
-        </div>
+        <h3>Alerts</h3>
+        <pre id="sustainability-alerts">–</pre>
 
-    </div>
+        <h3>Recommended Actions</h3>
+        <pre id="sustainability-actions">–</pre>
+
+        <h3>Created Tasks</h3>
+        <pre id="sustainability-tasks">–</pre>
+    </section>
+
+    <!-- LOGS -->
+    <section id="logs">
+        <h2>Public Logs</h2>
+        <button onclick="loadLogs()">Load Logs</button>
+        <pre id="logs-result">–</pre>
+    </section>
+
 </div>
 
 <script>
-    let currentMainTab = 'overview';
-    let currentInnerTab = 'overview-actions';
-    let ecologyChart = null;
-    let overviewEcologyChart = null;
-    let overviewCombinedChart = null;
-    let autoLogsInterval = null;
+function showSection(id) {
+    document.querySelectorAll("section").forEach(s => s.style.display = "none");
+    document.getElementById(id).style.display = "block";
+}
 
-    // THEME
+/* HOUSING */
+function requestHousing() {
+    fetch("/housing/request", { method: "POST" })
+        .then(r => r.json())
+        .then(data => document.getElementById("housing-result").textContent = JSON.stringify(data, null, 2));
+}
 
-    function toggleTheme() {
-        const body = document.body;
-        const label = document.getElementById('mode-label');
-        if (body.classList.contains('dark')) {
-            body.classList.remove('dark');
-            body.classList.add('light');
-            label.textContent = 'Light';
-        } else {
-            body.classList.remove('light');
-            body.classList.add('dark');
-            label.textContent = 'Dark';
-        }
-    }
+/* MOBILITY */
+function requestMobility() {
+    fetch("/mobility/request", { method: "POST" })
+        .then(r => r.json())
+        .then(data => document.getElementById("mobility-result").textContent = JSON.stringify(data, null, 2));
+}
 
-    // MAIN TABS (sidebar)
+/* LOGISTICS */
+function sendResidue() {
+    fetch("/logistics/residue", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ content: "mixed residue" })
+    })
+    .then(r => r.json())
+    .then(data => document.getElementById("logistics-result").textContent = JSON.stringify(data, null, 2));
+}
 
-    function setMainTab(tabName, ev) {
-        currentMainTab = tabName;
+/* JUSTICE */
+function processIncident() {
+    const id = document.getElementById("incident-id").value;
+    fetch(`/justice/process/${id}`, { method: "POST" })
+        .then(r => r.json())
+        .then(data => document.getElementById("justice-result").textContent = JSON.stringify(data, null, 2));
+}
 
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        if (ev) ev.currentTarget.classList.add('active');
+/* CIVIC FORCE */
+function civicIntervention() {
+    fetch("/civic/intervention", { method: "POST" })
+        .then(r => r.json())
+        .then(data => document.getElementById("civic-result").textContent = JSON.stringify(data, null, 2));
+}
 
-        document.querySelectorAll('.main-tab').forEach(t => t.style.display = 'none');
-        document.getElementById('tab-' + tabName).style.display = 'block';
+/* ECOLOGY */
+function updateEcology() {
+    fetch("/ecology/update", { method: "POST" })
+        .then(r => r.json())
+        .then(data => document.getElementById("ecology-result").textContent = JSON.stringify(data, null, 2));
+}
 
-        const titleMap = {
-            'overview': 'Overview',
-            'housing': 'Housing',
-            'mobility': 'Mobility',
-            'logistics': 'Logistics',
-            'justice': 'Justice & Civic Force',
-            'ecology': 'Ecology',
-            'voting': 'Voting',
-            'logs': 'Public Logs'
-        };
-        document.getElementById('top-title').textContent = titleMap[tabName] || 'Cerebrus OS';
-
-        const panelTitleMap = {
-            'overview': 'SYSTEM OVERVIEW',
-            'housing': 'HOUSING MODULE',
-            'mobility': 'MOBILITY MODULE',
-            'logistics': 'LOGISTICS MODULE',
-            'justice': 'JUSTICE & CIVIC FORCE',
-            'ecology': 'ECOLOGY MODULE',
-            'voting': 'VOTING MODULE',
-            'logs': 'PUBLIC LOGS'
-        };
-        document.getElementById('main-panel-title').textContent = panelTitleMap[tabName] || 'MODULE';
-
-        const panelSubtitleMap = {
-            'overview': 'High-level controls and actions',
-            'housing': 'Allocation of houses to families',
-            'mobility': 'Vehicle assignment and routing',
-            'logistics': 'Deliveries and residue flows',
-            'justice': 'Incidents, restoration and interventions',
-            'ecology': 'Resource flows and regeneration',
-            'voting': 'Weighted democratic decisions',
-            'logs': 'Ledger entries from all modules'
-        };
-        document.getElementById('main-panel-subtitle').textContent = panelSubtitleMap[tabName] || '';
-    }
-
-    // INNER TABS (overview)
-
-    function setInnerTab(sectionId, ev) {
-        currentInnerTab = sectionId;
-        document.querySelectorAll('#tab-overview .tab-section').forEach(s => s.classList.remove('active'));
-        document.getElementById(sectionId).classList.add('active');
-
-        document.querySelectorAll('#tab-overview .tab-btn').forEach(b => b.classList.remove('active'));
-        if (ev) ev.currentTarget.classList.add('active');
-    }
-
-    // API CALLS
-
-    function callAPI(endpoint) {
-        fetch(endpoint)
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("output").textContent =
-                    JSON.stringify(data, null, 2);
-            })
-            .catch(err => {
-                document.getElementById("output").textContent =
-                    "Error: " + err;
-            });
-    }
-
-    // ECOLOGY + CHARTS
-
-    function updateEcologyAndChart() {
-        fetch('/update_ecology')
-            .then(r => r.json())
-            .then(data => {
-                document.getElementById("output").textContent =
-                    JSON.stringify(data, null, 2);
-                refreshEcologyCharts(data);
-            })
-            .catch(err => {
-                document.getElementById("output").textContent =
-                    "Error: " + err;
-            });
-    }
-
-    function refreshEcologyCharts(data) {
-        const labels = Object.keys(data);
-        const consumed = labels.map(k => data[k].consumed || 0);
-        const regenerated = labels.map(k => data[k].regenerated || 0);
-
-        // Main ecology chart
-        const ctx = document.getElementById('ecologyChart').getContext('2d');
-        if (ecologyChart) ecologyChart.destroy();
-        ecologyChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels,
-                datasets: [
-                    {
-                        label: 'Consumed',
-                        data: consumed,
-                        backgroundColor: 'rgba(248, 113, 113, 0.7)'
-                    },
-                    {
-                        label: 'Regenerated',
-                        data: regenerated,
-                        backgroundColor: 'rgba(52, 211, 153, 0.7)'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { labels: { color: '#e5e7eb' } } },
-                scales: {
-                    x: { ticks: { color: '#9ca3af' } },
-                    y: { ticks: { color: '#9ca3af' } }
-                }
-            }
-        });
-
-        // Overview ecology snapshot
-        const ctx2 = document.getElementById('overviewEcologyChart').getContext('2d');
-        if (overviewEcologyChart) overviewEcologyChart.destroy();
-        overviewEcologyChart = new Chart(ctx2, {
-            type: 'radar',
-            data: {
-                labels,
-                datasets: [
-                    {
-                        label: 'Balance (regenerated - consumed)',
-                        data: labels.map((k, i) => regenerated[i] - consumed[i]),
-                        backgroundColor: 'rgba(56, 189, 248, 0.25)',
-                        borderColor: 'rgba(56, 189, 248, 1)'
-                    }
-                ]
-            },
-            options: {
-                plugins: { legend: { labels: { color: '#e5e7eb' } } },
-                scales: {
-                    r: {
-                        angleLines: { color: '#1f2937' },
-                        grid: { color: '#1f2937' },
-                        pointLabels: { color: '#9ca3af' },
-                        ticks: { color: '#9ca3af' }
-                    }
-                }
-            }
-        });
-
-        // Combined overview chart (for now, reuse ecology as "system health")
-        const ctx3 = document.getElementById('overviewCombinedChart').getContext('2d');
-        if (overviewCombinedChart) overviewCombinedChart.destroy();
-        overviewCombinedChart = new Chart(ctx3, {
-            type: 'line',
-            data: {
-                labels,
-                datasets: [
-                    {
-                        label: 'Regenerated',
-                        data: regenerated,
-                        borderColor: 'rgba(52, 211, 153, 1)',
-                        backgroundColor: 'rgba(52, 211, 153, 0.2)',
-                        tension: 0.3
-                    },
-                    {
-                        label: 'Consumed',
-                        data: consumed,
-                        borderColor: 'rgba(248, 113, 113, 1)',
-                        backgroundColor: 'rgba(248, 113, 113, 0.2)',
-                        tension: 0.3
-                    }
-                ]
-            },
-            options: {
-                plugins: { legend: { labels: { color: '#e5e7eb' } } },
-                scales: {
-                    x: { ticks: { color: '#9ca3af' } },
-                    y: { ticks: { color: '#9ca3af' } }
-                }
-            }
-        });
-    }
-
-    // LOGS
-
-    function loadLogs() {
-        fetch('/logs')
-            .then(r => r.json())
-            .then(data => {
-                renderLogs(data);
-                document.getElementById("output").textContent =
-                    JSON.stringify(data, null, 2);
-            })
-            .catch(err => {
-                document.getElementById("output").textContent =
-                    "Error: " + err;
-            });
-    }
-
-    function renderLogs(logs) {
-        const container = document.getElementById('logs-container');
-        container.innerHTML = '';
-        logs.forEach(log => {
-            const line = document.createElement('div');
-            line.className = 'log-line';
-            line.innerHTML =
-                `<span class="log-module">[${log.module}]</span> ` +
-                `<span class="log-action">${log.action}</span> ` +
-                `<span class="log-details">${JSON.stringify(log.details)}</span>`;
-            container.appendChild(line);
-        });
-        container.scrollTop = container.scrollHeight;
-    }
-
-    function toggleAutoLogs() {
-        if (autoLogsInterval) {
-            clearInterval(autoLogsInterval);
-            autoLogsInterval = null;
-        } else {
-            autoLogsInterval = setInterval(loadLogs, 3000);
-        }
-    }
-
-<script>
+/* SUSTAINABILITY */
 function loadSustainabilityPanel() {
     fetch("/sustainability/panel")
         .then(r => r.json())
         .then(data => {
-            document.getElementById("sustainability-score").textContent =
-                JSON.stringify(data.score, null, 2);
-
-            document.getElementById("sustainability-indicators").textContent =
-                JSON.stringify(data.indicators, null, 2);
-
-            document.getElementById("sustainability-alerts").textContent =
-                JSON.stringify(data.alerts, null, 2);
+            document.getElementById("sustainability-score").textContent = JSON.stringify(data.score, null, 2);
+            document.getElementById("sustainability-indicators").textContent = JSON.stringify(data.indicators, null, 2);
+            document.getElementById("sustainability-alerts").textContent = JSON.stringify(data.alerts, null, 2);
         });
 }
 
 function loadSustainabilityActions() {
     fetch("/sustainability/actions")
         .then(r => r.json())
-        .then(data => {
-            document.getElementById("sustainability-actions").textContent =
-                JSON.stringify(data, null, 2);
-        });
+        .then(data => document.getElementById("sustainability-actions").textContent = JSON.stringify(data, null, 2));
 }
 
 function createSustainabilityTasks() {
     fetch("/sustainability/create_tasks", { method: "POST" })
         .then(r => r.json())
-        .then(data => {
-            document.getElementById("sustainability-tasks").textContent =
-                JSON.stringify(data, null, 2);
-        });
+        .then(data => document.getElementById("sustainability-tasks").textContent = JSON.stringify(data, null, 2));
 }
-</script>
 
-    // NEIGHBORHOOD GRID
+function updateSustainabilityIndicator() {
+    const indicator = prompt("Indicator name (e.g., renewable_energy_ratio):");
+    const value = prompt("New value (0 to 1):");
 
-    function initGrid() {
-        const grid = document.getElementById('neighborhood-grid');
-        const blocks = ['Block A', 'Block B', 'Block C', 'Block D',
-                        'Block E', 'Block F', 'Block G', 'Block H'];
-        blocks.forEach((name, idx) => {
-            const cell = document.createElement('div');
-            cell.className = 'grid-cell';
-            cell.innerHTML =
-                `<div class="grid-cell-title">${name}</div>` +
-                `<div class="grid-cell-metric">Status: Stable</div>` +
-                `<div class="grid-cell-metric">Index: ${idx + 1}</div>`;
-            grid.appendChild(cell);
-        });
-    }
+    fetch(`/sustainability/update/${indicator}/${value}`, { method: "POST" })
+        .then(r => r.json())
+        .then(data => alert("Updated: " + JSON.stringify(data)));
+}
 
-    // HOUSING DASHBOARD
-
-    let housingBarChart = null;
-    let housingDoughnutChart = null;
-
-    function setHousingTab(sectionId, ev) {
-        document.querySelectorAll('#tab-housing .tab-section').forEach(s => s.classList.remove('active'));
-        document.getElementById(sectionId).classList.add('active');
-
-        document.querySelectorAll('#tab-housing .tab-btn').forEach(b => b.classList.remove('active'));
-        if (ev) ev.currentTarget.classList.add('active');
-    }
-
-    function refreshHousingDashboard() {
-        // Simulated data
-        const available = 10 + Math.floor(Math.random() * 5);
-        const occupied = 8 + Math.floor(Math.random() * 4);
-        const waiting = 2 + Math.floor(Math.random() * 3);
-        const successRate = 60 + Math.floor(Math.random() * 30);
-
-        // Update actions log
-        const log = document.getElementById('housingActionsLog');
-        const timestamp = new Date().toLocaleTimeString();
-        log.textContent =
-            `[${timestamp}] Dashboard refreshed\n` +
-            `Available: ${available}\n` +
-            `Occupied: ${occupied}\n` +
-            `Waiting: ${waiting}\n` +
-            `Success Rate: ${successRate}%\n\n` +
-            log.textContent;
-
-        // Bar chart
-        const ctx1 = document.getElementById('housingBarChart').getContext('2d');
-        if (housingBarChart) housingBarChart.destroy();
-        housingBarChart = new Chart(ctx1, {
-            type: 'bar',
-            data: {
-                labels: ['Available', 'Occupied', 'Waiting'],
-                datasets: [{
-                    label: 'Housing Status',
-                    data: [available, occupied, waiting],
-                    backgroundColor: [
-                        'rgba(52, 211, 153, 0.7)',
-                        'rgba(248, 113, 113, 0.7)',
-                        'rgba(251, 191, 36, 0.7)'
-                    ]
-                }]
-            },
-            options: {
-                plugins: { legend: { labels: { color: '#e5e7eb' } } },
-                scales: {
-                    x: { ticks: { color: '#9ca3af' } },
-                    y: { ticks: { color: '#9ca3af' } }
-                }
-            }
-        });
-
-        // Doughnut chart
-        const ctx2 = document.getElementById('housingDoughnutChart').getContext('2d');
-        if (housingDoughnutChart) housingDoughnutChart.destroy();
-        housingDoughnutChart = new Chart(ctx2, {
-            type: 'doughnut',
-            data: {
-                labels: ['Success', 'Failure'],
-                datasets: [{
-                    data: [successRate, 100 - successRate],
-                    backgroundColor: [
-                        'rgba(56, 189, 248, 0.7)',
-                        'rgba(148, 163, 184, 0.3)'
-                    ]
-                }]
-            },
-            options: {
-                plugins: { legend: { labels: { color: '#e5e7eb' } } }
-            }
-        });
-    }
-
-    // INIT
-
-    window.addEventListener('load', () => {
-        document.body.classList.add('dark');
-        document.getElementById('mode-label').textContent = 'Dark';
-        initGrid();
-        // Optionally preload ecology
-        // updateEcologyAndChart();
-    });
+/* LOGS */
+function loadLogs() {
+    fetch("/logs")
+        .then(r => r.json())
+        .then(data => document.getElementById("logs-result").textContent = JSON.stringify(data, null, 2));
+}
 </script>
 
 </body>
