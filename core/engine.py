@@ -30,7 +30,7 @@ class CerebrusEngine:
     families: Dict[str, Family] = field(default_factory=dict)
     houses: Dict[str, House] = field(default_factory=dict)
     fleet: Dict[str, Any] = field(default_factory=dict)
-    civic_members: Dict[str, Any] = field(default_default_factory=dict)
+    civic_members: Dict[str, Any] = field(default_factory=dict)
     logistics_requests: Dict[str, LogisticsRequest] = field(default_factory=dict)
     incidents: Dict[str, Incident] = field(default_factory=dict)
     institutions: Dict[str, Institution] = field(default_factory=dict)
