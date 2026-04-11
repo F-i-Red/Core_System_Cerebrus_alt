@@ -395,6 +395,7 @@
                         <button class="action" onclick="callAPI('/request_house')">Request House</button>
                         <button class="action" onclick="callAPI('/request_transport')">Request Transport</button>
                         <button class="action" onclick="callAPI('/send_residue')">Send Residue</button>
+                        <button class="action" onclick="showSection('sustainability')">Sustainability</button>
                         <button class="action" onclick="callAPI('/process_incident')">Process Incident</button>
                         <button class="action" onclick="callAPI('/civic_intervention')">Civic Force Intervention</button>
                         <button class="action" onclick="updateEcologyAndChart()">Update Ecology</button>
@@ -480,6 +481,31 @@
                         Incidents are processed with restorative logic; the Civic Force is dispatched when needed.
                     </p>
                 </div>
+
+<section id="sustainability" style="display:none; padding:20px;">
+    <h2>Sustainability Dashboard</h2>
+
+    <div>
+        <button onclick="loadSustainabilityPanel()">Load Panel</button>
+        <button onclick="loadSustainabilityActions()">Recommended Actions</button>
+        <button onclick="createSustainabilityTasks()">Create Civic Tasks</button>
+    </div>
+
+    <h3>Score</h3>
+    <pre id="sustainability-score">–</pre>
+
+    <h3>Indicators</h3>
+    <pre id="sustainability-indicators">–</pre>
+
+    <h3>Alerts</h3>
+    <pre id="sustainability-alerts">–</pre>
+
+    <h3>Recommended Actions</h3>
+    <pre id="sustainability-actions">–</pre>
+
+    <h3>Created Tasks</h3>
+    <pre id="sustainability-tasks">–</pre>
+</section>
 
                 <!-- ECOLOGY TAB -->
                 <div class="main-tab" id="tab-ecology" style="display:none;">
@@ -805,6 +831,41 @@
             autoLogsInterval = setInterval(loadLogs, 3000);
         }
     }
+
+<script>
+function loadSustainabilityPanel() {
+    fetch("/sustainability/panel")
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById("sustainability-score").textContent =
+                JSON.stringify(data.score, null, 2);
+
+            document.getElementById("sustainability-indicators").textContent =
+                JSON.stringify(data.indicators, null, 2);
+
+            document.getElementById("sustainability-alerts").textContent =
+                JSON.stringify(data.alerts, null, 2);
+        });
+}
+
+function loadSustainabilityActions() {
+    fetch("/sustainability/actions")
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById("sustainability-actions").textContent =
+                JSON.stringify(data, null, 2);
+        });
+}
+
+function createSustainabilityTasks() {
+    fetch("/sustainability/create_tasks", { method: "POST" })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById("sustainability-tasks").textContent =
+                JSON.stringify(data, null, 2);
+        });
+}
+</script>
 
     // NEIGHBORHOOD GRID
 
